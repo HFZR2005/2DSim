@@ -102,6 +102,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
   import { liftWorkbench } from './liftWorkbench';
   import { projectileWorkbench } from './projectileWorkbench';
   import { pulleyWorkbench } from './pulleyWorkbench';
+  import { variableAccelerationWorkbench } from './variableAccelerationWorkbench';
   import { ScenarioSwitcher } from './ScenarioSwitcher';
   import { SimulatorCanvas } from './SimulatorCanvas';
   import type { Experiment } from './workbenchTypes';
@@ -117,6 +118,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
     'ladder-against-wall': ladderWorkbench,
     'projectile-motion': projectileWorkbench,
     lift: liftWorkbench,
+    'variable-acceleration': variableAccelerationWorkbench,
   };
   const experiment = workbenches[slug] ?? pulleyWorkbench;
 

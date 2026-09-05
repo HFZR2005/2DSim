@@ -108,6 +108,18 @@ export const scenarios: Scenario[] = [
     options: [],
   },
   {
+    slug: 'variable-acceleration',
+    title: 'Variable acceleration',
+    path: ['Dynamics', 'Calculus'],
+    summary: 'Given v(t) = p + qt + rt², differentiate for a and integrate for s.',
+    description:
+      'Variable acceleration: a particle with v(t) = p + qt + rt². Differentiate to get a(t) and integrate from rest at the origin to get s(t). r = 0 is constant acceleration.',
+    dateModified: '2026-09-05',
+    tags: ['dynamics', 'calculus', 'variable acceleration', 'integration', 'differentiation', 'velocity'],
+    status: 'available',
+    options: [],
+  },
+  {
     slug: 'springs',
     title: 'Springs',
     path: ['Dynamics', 'Spring'],

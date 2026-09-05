@@ -12,7 +12,7 @@ Core A-level content first (safe regardless of exam board or Further Maths modul
 - [x] **Ladder against a wall** — statics — equilibrium of a rigid body, not a moving particle. Live. No shared `PhysicsResult`: the ladder returns N, S, F, not a and T.
 - [x] **Projectile motion** — dynamics — launch angle/speed, range, time of flight. 2D motion, no string/pulley. Live.
 - [x] **Lift/elevator problems** — dynamics — apparent weight, tension in a cable during acceleration. Live.
-- [ ] **Variable acceleration via calculus** — dynamics — given v(t) or a(t), find displacement/velocity by integration.
+- [x] **Variable acceleration via calculus** — dynamics — given v(t) = p + qt + rt², find a and s by differentiation and integration. Live.
 
 
 

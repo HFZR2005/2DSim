@@ -12,6 +12,8 @@ import ProjectileExplanation from '../../scenarios/projectile-motion/Explanation
 import ProjectileWorkedExample from '../../scenarios/projectile-motion/WorkedExample.astro';
 import PulleyExplanation from '../../scenarios/two-particle-pulley/Explanation.astro';
 import PulleyWorkedExample from '../../scenarios/two-particle-pulley/WorkedExample.astro';
+import VariableExplanation from '../../scenarios/variable-acceleration/Explanation.astro';
+import VariableWorkedExample from '../../scenarios/variable-acceleration/WorkedExample.astro';
 
 export function getStaticPaths() {
   return availableScenarios().map((scenario) => ({
@@ -46,6 +48,10 @@ const copy = {
   lift: {
     Explanation: LiftExplanation,
     WorkedExample: LiftWorkedExample,
+  },
+  'variable-acceleration': {
+    Explanation: VariableExplanation,
+    WorkedExample: VariableWorkedExample,
   },
 }[scenario.slug];
 
