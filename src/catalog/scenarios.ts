@@ -84,6 +84,18 @@ export const scenarios: Scenario[] = [
     options: [],
   },
   {
+    slug: 'projectile-motion',
+    title: 'Projectile motion',
+    path: ['Dynamics', 'Projectile'],
+    summary: 'A particle launched at speed u and angle θ; find range, greatest height, and time of flight.',
+    description:
+      'Projectile motion: a particle launched at speed u and angle θ from height h follows constant acceleration. Split the velocity, then read range R, greatest height H, and time of flight T; h = 0 is level ground.',
+    dateModified: '2026-09-05',
+    tags: ['dynamics', 'projectile', 'range', 'trajectory', 'flight', 'angle', 'gravity'],
+    status: 'available',
+    options: [],
+  },
+  {
     slug: 'springs',
     title: 'Springs',
     path: ['Dynamics', 'Spring'],
