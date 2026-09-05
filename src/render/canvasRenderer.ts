@@ -103,6 +103,51 @@ export function drawString(
   ctx.restore();
 }
 
+export function drawWall(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y1: number,
+  y2: number,
+): void {
+  drawIncline(ctx, [
+    { x, y: y1 },
+    { x, y: y2 },
+  ]);
+
+  ctx.save();
+  ctx.strokeStyle = INK_DIM;
+  ctx.lineWidth = 1;
+  const top = Math.min(y1, y2);
+  const bottom = Math.max(y1, y2);
+  for (let y = top; y <= bottom; y += 14) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + 0.5);
+    ctx.lineTo(x - 6, y - 5.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export function drawRod(
+  ctx: CanvasRenderingContext2D,
+  points: readonly Point[],
+): void {
+  if (points.length < 2) return;
+
+  ctx.save();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawSurface(
   ctx: CanvasRenderingContext2D,
   x1: number,

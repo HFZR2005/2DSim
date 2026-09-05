@@ -34,13 +34,20 @@ export class ControlPanel<C> {
       .map((field) => fieldMarkup(field))
       .join('');
 
-    this.root.innerHTML = `
-      <h2 class="panel-title">Controls</h2>
-      ${fields}
+    const actions =
+      this.experiment.actions === false
+        ? ''
+        : `
       <div class="actions">
         <button type="button" id="ctrl-run">Run</button>
         <button type="button" id="ctrl-reset">Reset</button>
       </div>
+    `;
+
+    this.root.innerHTML = `
+      <h2 class="panel-title">Controls</h2>
+      ${fields}
+      ${actions}
     `;
 
     for (const field of this.experiment.controls) {
@@ -65,10 +72,10 @@ export class ControlPanel<C> {
       input.addEventListener('input', emit);
     }
 
-    this.root.querySelector('#ctrl-run')!.addEventListener('click', () => {
+    this.root.querySelector('#ctrl-run')?.addEventListener('click', () => {
       this.handlers.onRun();
     });
-    this.root.querySelector('#ctrl-reset')!.addEventListener('click', () => {
+    this.root.querySelector('#ctrl-reset')?.addEventListener('click', () => {
       this.handlers.onReset();
     });
   }

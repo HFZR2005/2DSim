@@ -21,6 +21,8 @@ export type Viewport = {
 export type Experiment<C> = {
   defaultConfig: C;
   controls: ControlField[];
+  /** False for statics — the diagram updates live, there is nothing to run. */
+  actions?: boolean;
   parseConfig: (values: Record<string, number>) => C;
   render: (
     ctx: CanvasRenderingContext2D,

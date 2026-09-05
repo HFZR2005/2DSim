@@ -75,11 +75,12 @@ export const scenarios: Scenario[] = [
     slug: 'ladder-against-wall',
     title: 'Ladder against a wall',
     path: ['Statics', 'Ladder'],
-    summary: 'A ladder leaning on a wall; resolve forces and friction at the contacts.',
+    summary: 'A uniform ladder on rough ground against a smooth wall; resolve and take moments.',
     description:
-      'Ladder against a wall: resolve forces and friction at the contacts so the ladder is in equilibrium.',
-    tags: ['statics', 'ladder', 'wall', 'friction', 'equilibrium', 'moments'],
-    status: 'coming',
+      'Ladder against a wall: a uniform ladder leans on a smooth wall and rough ground. Resolve and take moments for the ground normal N, wall reaction S, and friction F. The ladder stands while F ≤ μN; μ = 0 is smooth ground.',
+    dateModified: '2026-09-05',
+    tags: ['statics', 'ladder', 'wall', 'friction', 'equilibrium', 'moments', 'rigid body'],
+    status: 'available',
     options: [],
   },
   {

@@ -98,17 +98,23 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
 <script>
   import { connectedParticlesWorkbench } from './connectedParticlesWorkbench';
   import { ControlPanel } from './ControlPanel';
+  import { ladderWorkbench } from './ladderWorkbench';
   import { pulleyWorkbench } from './pulleyWorkbench';
   import { ScenarioSwitcher } from './ScenarioSwitcher';
   import { SimulatorCanvas } from './SimulatorCanvas';
+  import type { Experiment } from './workbenchTypes';
 
   const canvas = document.querySelector<HTMLCanvasElement>('#sim-canvas');
   const readout = document.querySelector<HTMLElement>('#sim-readout');
   const panelRoot = document.querySelector<HTMLElement>('#control-panel');
   const switcherRoot = document.querySelector<HTMLElement>('#scenario-switcher');
   const slug = document.querySelector<HTMLElement>('.sim-app')?.dataset.slug ?? '';
-  const experiment =
-    slug === 'connected-particles' ? connectedParticlesWorkbench : pulleyWorkbench;
+  const workbenches: Record<string, Experiment<unknown>> = {
+    'two-particle-pulley': pulleyWorkbench,
+    'connected-particles': connectedParticlesWorkbench,
+    'ladder-against-wall': ladderWorkbench,
+  };
+  const experiment = workbenches[slug] ?? pulleyWorkbench;
 
   if (switcherRoot) {
     new ScenarioSwitcher(switcherRoot);
