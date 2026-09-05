@@ -208,6 +208,20 @@ export function drawArrow(
   ctx.restore();
 }
 
+export function drawRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): void {
+  ctx.save();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.25;
+  ctx.strokeRect(x + 0.5, y + 0.5, width, height);
+  ctx.restore();
+}
+
 export function drawPulley(
   ctx: CanvasRenderingContext2D,
   x: number,

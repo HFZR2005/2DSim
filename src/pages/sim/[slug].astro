@@ -6,6 +6,8 @@ import ConnectedExplanation from '../../scenarios/connected-particles/Explanatio
 import ConnectedWorkedExample from '../../scenarios/connected-particles/WorkedExample.astro';
 import LadderExplanation from '../../scenarios/ladder-against-wall/Explanation.astro';
 import LadderWorkedExample from '../../scenarios/ladder-against-wall/WorkedExample.astro';
+import LiftExplanation from '../../scenarios/lift/Explanation.astro';
+import LiftWorkedExample from '../../scenarios/lift/WorkedExample.astro';
 import ProjectileExplanation from '../../scenarios/projectile-motion/Explanation.astro';
 import ProjectileWorkedExample from '../../scenarios/projectile-motion/WorkedExample.astro';
 import PulleyExplanation from '../../scenarios/two-particle-pulley/Explanation.astro';
@@ -40,6 +42,10 @@ const copy = {
   'projectile-motion': {
     Explanation: ProjectileExplanation,
     WorkedExample: ProjectileWorkedExample,
+  },
+  lift: {
+    Explanation: LiftExplanation,
+    WorkedExample: LiftWorkedExample,
   },
 }[scenario.slug];
 

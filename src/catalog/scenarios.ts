@@ -96,6 +96,18 @@ export const scenarios: Scenario[] = [
     options: [],
   },
   {
+    slug: 'lift',
+    title: 'Lift',
+    path: ['Dynamics', 'Lift'],
+    summary: 'Apparent weight in a lift: cable tension or scale reading while the cabin accelerates.',
+    description:
+      'Lift: a mass m in a cabin that accelerates at a (upward positive) has apparent weight T = m(g + a). That T is the cable tension or the scale reading; a = 0 is at rest and a = −g is free fall.',
+    dateModified: '2026-09-05',
+    tags: ['dynamics', 'lift', 'elevator', 'tension', 'apparent weight', 'scale', 'cable'],
+    status: 'available',
+    options: [],
+  },
+  {
     slug: 'springs',
     title: 'Springs',
     path: ['Dynamics', 'Spring'],

@@ -99,6 +99,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
   import { connectedParticlesWorkbench } from './connectedParticlesWorkbench';
   import { ControlPanel } from './ControlPanel';
   import { ladderWorkbench } from './ladderWorkbench';
+  import { liftWorkbench } from './liftWorkbench';
   import { projectileWorkbench } from './projectileWorkbench';
   import { pulleyWorkbench } from './pulleyWorkbench';
   import { ScenarioSwitcher } from './ScenarioSwitcher';
@@ -115,6 +116,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
     'connected-particles': connectedParticlesWorkbench,
     'ladder-against-wall': ladderWorkbench,
     'projectile-motion': projectileWorkbench,
+    lift: liftWorkbench,
   };
   const experiment = workbenches[slug] ?? pulleyWorkbench;
 
