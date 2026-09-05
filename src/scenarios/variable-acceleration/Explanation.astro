@@ -12,16 +12,15 @@
     constant velocity.
   </p>
   <p>
-    This is still closed form — a quadratic <i>v</i>(<i>t</i>) integrates to
-    a cubic. There is no numerical stepping.
+    A quadratic velocity has a simpler derivative and a cubic integral.
+    The constant of integration is fixed by <i>s</i> = 0 at <i>t</i> = 0.
   </p>
   <ul>
     <li><i>a</i>(<i>t</i>) = d<i>v</i>/d<i>t</i> = <i>q</i> + 2<i>r t</i></li>
-    <li><i>s</i>(<i>t</i>) = ∫<i>v</i> d<i>t</i> = <i>p t</i> + ½<i>q t</i>² + ⅓<i>r t</i>³, taking <i>s</i>(0) = 0</li>
+    <li><i>s</i>(<i>t</i>) = ∫<i>v</i> d<i>t</i> = <i>p t</i> + ½<i>q t</i>² + ⅓<i>r t</i>³</li>
   </ul>
   <p>
-    The live values are those three functions at the current time. Run
-    advances <i>t</i> to 4 s so you can watch <i>s</i> grow and, with the
-    default coefficients, see the particle come to rest and turn back.
+    If <i>v</i> later becomes zero the particle is instantaneously at rest
+    and then reverses, provided <i>a</i> is not also zero.
   </p>
 </section>

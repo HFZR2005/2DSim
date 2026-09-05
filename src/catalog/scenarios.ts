@@ -44,7 +44,7 @@ export const scenarios: Scenario[] = [
       'Two particles joined by a light inextensible string over a smooth pulley; one sits on an incline.',
     description:
       'Two-particle pulley: two masses joined by a light inextensible string over a smooth pulley share one acceleration and one tension. Resolve along the string, include friction on the incline when μ > 0, then solve for a and T.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: ['dynamics', 'pulley', 'incline', 'two masses', 'string', 'tension', 'atwood', 'friction'],
     status: 'available',
     options: [],
@@ -57,7 +57,7 @@ export const scenarios: Scenario[] = [
       'Two particles on one horizontal surface, joined by a string and pulled by a horizontal force.',
     description:
       'Connected particles: two masses on one horizontal surface joined by a light inextensible string. A horizontal force P on the leading particle gives one acceleration and one tension. Resolve the system for a, then the trailer for T; μ = 0 is smooth.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: [
       'dynamics',
       'connected particles',
@@ -78,7 +78,7 @@ export const scenarios: Scenario[] = [
     summary: 'A uniform ladder on rough ground against a smooth wall; resolve and take moments.',
     description:
       'Ladder against a wall: a uniform ladder leans on a smooth wall and rough ground. Resolve and take moments for the ground normal N, wall reaction S, and friction F. The ladder stands while F ≤ μN; μ = 0 is smooth ground.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: ['statics', 'ladder', 'wall', 'friction', 'equilibrium', 'moments', 'rigid body'],
     status: 'available',
     options: [],
@@ -90,7 +90,7 @@ export const scenarios: Scenario[] = [
     summary: 'A particle launched at speed u and angle θ; find range, greatest height, and time of flight.',
     description:
       'Projectile motion: a particle launched at speed u and angle θ from height h follows constant acceleration. Split the velocity, then read range R, greatest height H, and time of flight T; h = 0 is level ground.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: ['dynamics', 'projectile', 'range', 'trajectory', 'flight', 'angle', 'gravity'],
     status: 'available',
     options: [],
@@ -102,7 +102,7 @@ export const scenarios: Scenario[] = [
     summary: 'Apparent weight in a lift: cable tension or scale reading while the cabin accelerates.',
     description:
       'Lift: a mass m in a cabin that accelerates at a (upward positive) has apparent weight T = m(g + a). That T is the cable tension or the scale reading; a = 0 is at rest and a = −g is free fall.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: ['dynamics', 'lift', 'elevator', 'tension', 'apparent weight', 'scale', 'cable'],
     status: 'available',
     options: [],
@@ -114,7 +114,7 @@ export const scenarios: Scenario[] = [
     summary: 'Given v(t) = p + qt + rt², differentiate for a and integrate for s.',
     description:
       'Variable acceleration: a particle with v(t) = p + qt + rt². Differentiate to get a(t) and integrate from rest at the origin to get s(t). r = 0 is constant acceleration.',
-    dateModified: '2026-09-05',
+    dateModified: '2026-09-06',
     tags: ['dynamics', 'calculus', 'variable acceleration', 'integration', 'differentiation', 'velocity'],
     status: 'available',
     options: [],
