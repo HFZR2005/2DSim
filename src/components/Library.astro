@@ -1,0 +1,78 @@
+---
+import { FILTERS, scenarioHref, searchHaystack, scenarios } from '../catalog/scenarios';
+---
+
+<div class="library" id="library">
+  <header class="sim-header">
+    <a class="wordmark" href="/">2DSim</a>
+    <span>A-level mechanics · index</span>
+  </header>
+
+  <main class="library-main">
+    <label class="library-search" for="library-search">
+      <span class="field-label">Search</span>
+      <input
+        id="library-search"
+        type="search"
+        placeholder="pulley, ladder, springs, SHM…"
+        autocomplete="off"
+      />
+    </label>
+
+    <div class="chips" role="group" aria-label="Filters">
+      {FILTERS.map((filter) => (
+        <button type="button" data-filter={filter.id} aria-pressed={filter.id === 'all' ? 'true' : 'false'}>
+          {filter.label}
+        </button>
+      ))}
+    </div>
+
+    <ol class="scenario-list">
+      {scenarios.map((scenario) => {
+        const href = scenarioHref(scenario);
+        const path = scenario.path.join(' · ');
+        const search = searchHaystack(scenario);
+        const tags = scenario.tags.join(' ');
+        return (
+          <li
+            class:list={['scenario-row', scenario.status]}
+            data-slug={scenario.slug}
+            data-search={search}
+            data-tags={tags}
+          >
+            {href ? (
+              <a href={href}>
+                <span class="scenario-row-top">
+                  <span class="scenario-row-title">{scenario.title}</span>
+                  <span class="scenario-row-status">Available</span>
+                </span>
+                <span class="scenario-row-path">{path}</span>
+                <span class="scenario-row-summary">{scenario.summary}</span>
+              </a>
+            ) : (
+              <div>
+                <span class="scenario-row-top">
+                  <span class="scenario-row-title">{scenario.title}</span>
+                  <span class="scenario-row-status">Coming</span>
+                </span>
+                <span class="scenario-row-path">{path}</span>
+                <span class="scenario-row-summary">{scenario.summary}</span>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+
+    <p id="library-empty" class="library-empty" hidden>No experiments match.</p>
+  </main>
+</div>
+
+<script>
+  import { LibrarySearch } from './LibrarySearch';
+
+  const root = document.querySelector<HTMLElement>('#library');
+  if (root) {
+    new LibrarySearch(root);
+  }
+</script>

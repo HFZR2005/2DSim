@@ -1,0 +1,22 @@
+---
+import Simulator from '../../components/Simulator.astro';
+import { availableScenarios, getScenario, scenarios } from '../../catalog/scenarios';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export function getStaticPaths() {
+  return availableScenarios().map((scenario) => ({
+    params: { slug: scenario.slug },
+  }));
+}
+
+const slug = Astro.params.slug;
+const scenario = slug ? getScenario(slug) : undefined;
+
+if (!scenario || scenario.status !== 'available') {
+  return Astro.redirect('/');
+}
+---
+
+<BaseLayout title={`2DSim — ${scenario.title}`}>
+  <Simulator scenario={scenario} catalog={scenarios} />
+</BaseLayout>

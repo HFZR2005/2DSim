@@ -1,0 +1,127 @@
+---
+import type { Scenario } from '../catalog/scenarios';
+import { scenarioHref } from '../catalog/scenarios';
+
+interface Props {
+  scenario: Scenario;
+  catalog: Scenario[];
+}
+
+const { scenario, catalog } = Astro.props;
+const path = scenario.path.join(' · ');
+const activeOption = scenario.options.find((option) => option.status === 'available');
+---
+
+<div class="sim-app">
+  <header class="sim-header">
+    <div class="scenario-identity" id="scenario-switcher">
+      <div class="scenario-identity-row">
+        <a class="wordmark" href="/">2DSim</a>
+        <button
+          type="button"
+          id="scenario-switcher-btn"
+          aria-expanded="false"
+          aria-controls="scenario-switcher-panel"
+        >
+          {scenario.title}
+          <span class="switcher-caret" aria-hidden="true">▾</span>
+        </button>
+      </div>
+      <p class="scenario-path">{path}</p>
+      <div id="scenario-switcher-panel" class="switcher-panel" hidden>
+        <p class="switcher-label">Experiments</p>
+        <ul>
+          {catalog.map((item) => {
+            const href = scenarioHref(item);
+            const current = item.slug === scenario.slug;
+            return (
+              <li class:list={[item.status, { current }]}>
+                {href ? (
+                  <a href={href} aria-current={current ? 'page' : undefined}>
+                    <span>{item.title}</span>
+                    <span class="switcher-meta">{item.path.join(' · ')}</span>
+                  </a>
+                ) : (
+                  <span class="switcher-coming">
+                    <span>{item.title}</span>
+                    <span class="switcher-meta">Coming</span>
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <a class="switcher-index" href="/">All experiments</a>
+      </div>
+    </div>
+    <span>A-level mechanics · v0</span>
+  </header>
+
+  <div class="sim-main">
+    <div class="sim-stage">
+      <canvas id="sim-canvas"></canvas>
+      <div id="sim-readout" class="readout" aria-live="polite"></div>
+    </div>
+    <aside class="control-panel">
+      {scenario.options.length > 0 && (
+        <div class="experiment-options">
+          <h2 class="panel-title">Options</h2>
+          <div class="option-group" role="radiogroup" aria-label="Incline surface">
+            {scenario.options.map((option) => {
+              const selected = option.id === activeOption?.id;
+              const disabled = option.status !== 'available';
+              return (
+                <button
+                  type="button"
+                  class:list={['option-chip', { 'is-active': selected }]}
+                  aria-pressed={selected}
+                  disabled={disabled}
+                >
+                  {option.label}
+                  {disabled && <span class="option-coming">Coming</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <div id="control-panel"></div>
+    </aside>
+  </div>
+
+  <div class="placeholders">
+    <section>
+      <h2>Explanation</h2>
+      <p>Placeholder — force resolution, common tension, and the closed-form expressions for a and T will go here.</p>
+    </section>
+    <section>
+      <h2>Worked example</h2>
+      <p>Placeholder — a fully worked numerical example for the current scenario will go here.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+  import { ControlPanel } from './ControlPanel';
+  import { ScenarioSwitcher } from './ScenarioSwitcher';
+  import { SimulatorCanvas } from './SimulatorCanvas';
+
+  const canvas = document.querySelector<HTMLCanvasElement>('#sim-canvas');
+  const readout = document.querySelector<HTMLElement>('#sim-readout');
+  const panelRoot = document.querySelector<HTMLElement>('#control-panel');
+  const switcherRoot = document.querySelector<HTMLElement>('#scenario-switcher');
+
+  if (switcherRoot) {
+    new ScenarioSwitcher(switcherRoot);
+  }
+
+  if (canvas && readout && panelRoot) {
+    const simulator = new SimulatorCanvas(canvas, readout);
+    const panel = new ControlPanel(panelRoot, {
+      onChange: (config) => simulator.setConfig(config),
+      onRun: () => simulator.run(),
+      onReset: () => simulator.reset(),
+    });
+    simulator.setConfig(panel.getConfig());
+  }
+</script>

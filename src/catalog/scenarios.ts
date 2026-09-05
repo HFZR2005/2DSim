@@ -1,0 +1,121 @@
+export type ScenarioStatus = 'available' | 'coming';
+
+export type ScenarioOption = {
+  id: string;
+  label: string;
+  status: ScenarioStatus;
+};
+
+export type Scenario = {
+  slug: string;
+  title: string;
+  /** Topic · setup, e.g. Dynamics · Pulley */
+  path: string[];
+  summary: string;
+  /** Tokens for search. Include the topic id used by filter chips. */
+  tags: string[];
+  status: ScenarioStatus;
+  /** Knobs on this setup — not separate catalog entries. */
+  options: ScenarioOption[];
+};
+
+export type FilterChip = {
+  id: string;
+  label: string;
+};
+
+export const FILTERS: FilterChip[] = [
+  { id: 'all', label: 'All' },
+  { id: 'dynamics', label: 'Dynamics' },
+  { id: 'statics', label: 'Statics' },
+  { id: 'oscillations', label: 'Oscillations' },
+];
+
+export const scenarios: Scenario[] = [
+  {
+    slug: 'two-particle-pulley',
+    title: 'Two-particle pulley',
+    path: ['Dynamics', 'Pulley'],
+    summary:
+      'Two particles joined by a light inextensible string over a smooth pulley; one sits on an incline.',
+    tags: ['dynamics', 'pulley', 'incline', 'two masses', 'string', 'tension', 'atwood'],
+    status: 'available',
+    options: [
+      { id: 'smooth', label: 'Smooth incline', status: 'available' },
+      { id: 'rough', label: 'Rough incline', status: 'coming' },
+    ],
+  },
+  {
+    slug: 'ladder-against-wall',
+    title: 'Ladder against a wall',
+    path: ['Statics', 'Ladder'],
+    summary: 'A ladder leaning on a wall; resolve forces and friction at the contacts.',
+    tags: ['statics', 'ladder', 'wall', 'friction', 'equilibrium', 'moments'],
+    status: 'coming',
+    options: [],
+  },
+  {
+    slug: 'springs',
+    title: 'Springs',
+    path: ['Dynamics', 'Spring'],
+    summary: 'Hooke’s law, extension, and energy in a light spring.',
+    tags: ['dynamics', 'oscillations', 'spring', 'hooke', 'extension', 'energy'],
+    status: 'coming',
+    options: [],
+  },
+  {
+    slug: 'simple-harmonic-motion',
+    title: 'Simple harmonic motion',
+    path: ['Oscillations', 'SHM'],
+    summary: 'Displacement, velocity, and acceleration in SHM.',
+    tags: ['oscillations', 'shm', 'spring', 'pendulum', 'frequency', 'amplitude'],
+    status: 'coming',
+    options: [],
+  },
+];
+
+export function getScenario(slug: string): Scenario | undefined {
+  return scenarios.find((scenario) => scenario.slug === slug);
+}
+
+export function availableScenarios(): Scenario[] {
+  return scenarios.filter((scenario) => scenario.status === 'available');
+}
+
+export function scenarioHref(scenario: Scenario): string | undefined {
+  if (scenario.status !== 'available') return undefined;
+  return `/sim/${scenario.slug}`;
+}
+
+export function searchHaystack(scenario: Scenario): string {
+  return [
+    scenario.title,
+    scenario.summary,
+    scenario.slug,
+    ...scenario.path,
+    ...scenario.tags,
+    ...scenario.options.map((option) => option.label),
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+export function matchesScenario(
+  scenario: Scenario,
+  query: string,
+  filterId: string,
+): boolean {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = tokenize(searchHaystack(scenario));
+  const matchesQuery = words.every((word) => tokens.some((token) => wordMatchesToken(word, token)));
+  const matchesFilter = filterId === 'all' || scenario.tags.includes(filterId);
+  return matchesQuery && matchesFilter;
+}
+
+function tokenize(text: string): string[] {
+  return text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+function wordMatchesToken(word: string, token: string): boolean {
+  return token === word || token === `${word}s` || token === `${word}es`;
+}
