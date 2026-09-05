@@ -1,6 +1,7 @@
 ---
 import type { Scenario } from '../catalog/scenarios';
 import { scenarioHref } from '../catalog/scenarios';
+import InstTags from './InstTags.astro';
 
 interface Props {
   scenario: Scenario;
@@ -8,7 +9,6 @@ interface Props {
 }
 
 const { scenario, catalog } = Astro.props;
-const path = scenario.path.join(' · ');
 const activeOption = scenario.options.find((option) => option.status === 'available');
 ---
 
@@ -27,7 +27,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
           <span class="switcher-caret" aria-hidden="true">▾</span>
         </button>
       </div>
-      <p class="scenario-path">{path}</p>
+      <p class="scenario-path"><InstTags items={scenario.path} /></p>
       <div id="scenario-switcher-panel" class="switcher-panel" hidden>
         <p class="switcher-label">Experiments</p>
         <ul>
@@ -39,12 +39,12 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
                 {href ? (
                   <a href={href} aria-current={current ? 'page' : undefined}>
                     <span>{item.title}</span>
-                    <span class="switcher-meta">{item.path.join(' · ')}</span>
+                    <span class="switcher-meta"><InstTags items={item.path} /></span>
                   </a>
                 ) : (
                   <span class="switcher-coming">
                     <span>{item.title}</span>
-                    <span class="switcher-meta">Coming</span>
+                    <span class="switcher-meta"><InstTags items={['Coming']} /></span>
                   </span>
                 )}
               </li>
@@ -54,7 +54,7 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
         <a class="switcher-index" href="/">All experiments</a>
       </div>
     </div>
-    <span>A-level mechanics · v0</span>
+    <span><InstTags items={['A-level mechanics', 'v0']} /></span>
   </header>
 
   <div class="sim-main">

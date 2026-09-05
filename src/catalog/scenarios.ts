@@ -9,7 +9,7 @@ export type ScenarioOption = {
 export type Scenario = {
   slug: string;
   title: string;
-  /** Topic · setup, e.g. Dynamics · Pulley */
+  /** Topic and setup tags, e.g. Dynamics, Pulley */
   path: string[];
   summary: string;
   /** Meta description + Article schema. Same wording everywhere it is used. */

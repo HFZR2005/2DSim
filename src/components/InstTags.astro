@@ -1,0 +1,13 @@
+---
+interface Props {
+  items: string[];
+}
+
+const { items } = Astro.props;
+---
+
+<span class="inst-tags">
+  {items.map((item) => (
+    <span class="inst-tag">[{item}]</span>
+  ))}
+</span>

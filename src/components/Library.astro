@@ -1,23 +1,24 @@
 ---
 import { FILTERS, scenarioHref, searchHaystack, scenarios } from '../catalog/scenarios';
+import InstTags from './InstTags.astro';
 ---
 
 <div class="library" id="library">
   <header class="sim-header">
     <a class="wordmark" href="/">2DSim</a>
-    <span>A-level mechanics · index</span>
+    <span><InstTags items={['A-level mechanics', 'index']} /></span>
   </header>
 
   <main class="library-main">
-    <label class="library-search" for="library-search">
-      <span class="field-label">Search</span>
+    <div class="library-search">
       <input
         id="library-search"
         type="search"
+        aria-label="Search"
         placeholder="pulley, connected particles, ladder…"
         autocomplete="off"
       />
-    </label>
+    </div>
 
     <div class="chips" role="group" aria-label="Filters">
       {FILTERS.map((filter) => (
@@ -30,7 +31,6 @@ import { FILTERS, scenarioHref, searchHaystack, scenarios } from '../catalog/sce
     <ol class="scenario-list">
       {scenarios.map((scenario) => {
         const href = scenarioHref(scenario);
-        const path = scenario.path.join(' · ');
         const search = searchHaystack(scenario);
         const tags = scenario.tags.join(' ');
         return (
@@ -46,7 +46,7 @@ import { FILTERS, scenarioHref, searchHaystack, scenarios } from '../catalog/sce
                   <span class="scenario-row-title">{scenario.title}</span>
                   <span class="scenario-row-status">Available</span>
                 </span>
-                <span class="scenario-row-path">{path}</span>
+                <span class="scenario-row-path"><InstTags items={scenario.path} /></span>
                 <span class="scenario-row-summary">{scenario.summary}</span>
               </a>
             ) : (
@@ -55,7 +55,7 @@ import { FILTERS, scenarioHref, searchHaystack, scenarios } from '../catalog/sce
                   <span class="scenario-row-title">{scenario.title}</span>
                   <span class="scenario-row-status">Coming</span>
                 </span>
-                <span class="scenario-row-path">{path}</span>
+                <span class="scenario-row-path"><InstTags items={scenario.path} /></span>
                 <span class="scenario-row-summary">{scenario.summary}</span>
               </div>
             )}
