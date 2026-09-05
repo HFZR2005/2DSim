@@ -1,5 +1,6 @@
-/** Standard gravity, m/s². */
-export const G = 9.81;
+import { EQUILIBRIUM_EPS, G } from './motion';
+
+export { G } from './motion';
 
 export type PulleyConfig = {
   /** Mass on the incline, kg. */
@@ -25,18 +26,8 @@ export type PulleyResult = {
   frictionForce: number;
 };
 
-export type MotionState = {
-  /** Displacement of the hanging particle from rest, m. Positive downward. */
-  displacement: number;
-  /** Velocity of the hanging particle, m/s. Positive downward. */
-  velocity: number;
-  /** Time used for the kinematic evaluation, s. */
-  t: number;
-  /** True when travel was clamped at a geometric limit. */
-  stopped: boolean;
-};
-
-const EQUILIBRIUM_EPS = 1e-10;
+export { motionFromRest } from './motion';
+export type { MotionState } from './motion';
 
 /**
  * Closed-form solution for two particles joined by a light inextensible
@@ -87,48 +78,6 @@ export function solveTwoParticlePulley(config: PulleyConfig): PulleyResult {
     moving: true,
     mu,
     frictionForce: limitingFriction,
-  };
-}
-
-/**
- * Constant-acceleration motion from rest: s = ½ a t², v = a t.
- * If `maxTravel` is set, motion freezes once |s| would exceed it.
- */
-export function motionFromRest(
-  acceleration: number,
-  t: number,
-  maxTravel?: number,
-): MotionState {
-  const elapsed = Math.max(t, 0);
-
-  if (Math.abs(acceleration) <= EQUILIBRIUM_EPS) {
-    return { displacement: 0, velocity: 0, t: elapsed, stopped: false };
-  }
-
-  if (maxTravel === undefined || maxTravel <= 0) {
-    return {
-      displacement: 0.5 * acceleration * elapsed * elapsed,
-      velocity: acceleration * elapsed,
-      t: elapsed,
-      stopped: false,
-    };
-  }
-
-  const tLimit = Math.sqrt((2 * maxTravel) / Math.abs(acceleration));
-  if (elapsed >= tLimit) {
-    return {
-      displacement: Math.sign(acceleration) * maxTravel,
-      velocity: 0,
-      t: tLimit,
-      stopped: true,
-    };
-  }
-
-  return {
-    displacement: 0.5 * acceleration * elapsed * elapsed,
-    velocity: acceleration * elapsed,
-    t: elapsed,
-    stopped: false,
   };
 }
 

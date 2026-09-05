@@ -1,113 +1,69 @@
-import type { PulleyConfig } from '../physics/twoParticlePulley';
+import type { ControlField, Experiment } from './workbenchTypes';
 
-export type ControlPanelHandlers = {
-  onChange: (config: PulleyConfig) => void;
+export type ControlPanelHandlers<C> = {
+  onChange: (config: C) => void;
   onRun: () => void;
   onReset: () => void;
 };
 
-const DEFAULTS: PulleyConfig = {
-  m1: 2,
-  m2: 3,
-  angleDegrees: 30,
-  mu: 0,
-};
-
-export class ControlPanel {
+export class ControlPanel<C> {
   private readonly root: HTMLElement;
-  private readonly handlers: ControlPanelHandlers;
-  private m1Input!: HTMLInputElement;
-  private m2Input!: HTMLInputElement;
-  private angleInput!: HTMLInputElement;
-  private muInput!: HTMLInputElement;
-  private m1Out!: HTMLOutputElement;
-  private m2Out!: HTMLOutputElement;
-  private angleOut!: HTMLOutputElement;
-  private muOut!: HTMLOutputElement;
+  private readonly experiment: Experiment<C>;
+  private readonly handlers: ControlPanelHandlers<C>;
+  private readonly inputs = new Map<string, HTMLInputElement>();
+  private readonly outputs = new Map<string, HTMLOutputElement>();
 
-  constructor(root: HTMLElement, handlers: ControlPanelHandlers) {
+  constructor(root: HTMLElement, experiment: Experiment<C>, handlers: ControlPanelHandlers<C>) {
     this.root = root;
+    this.experiment = experiment;
     this.handlers = handlers;
     this.render();
     this.bind();
   }
 
-  getConfig(): PulleyConfig {
-    return {
-      m1: Number(this.m1Input.value),
-      m2: Number(this.m2Input.value),
-      angleDegrees: Number(this.angleInput.value),
-      mu: Number(this.muInput.value),
-    };
+  getConfig(): C {
+    const values: Record<string, number> = {};
+    for (const field of this.experiment.controls) {
+      values[field.id] = Number(this.inputs.get(field.id)?.value);
+    }
+    return this.experiment.parseConfig(values);
   }
 
   private render(): void {
+    const fields = this.experiment.controls
+      .map((field) => fieldMarkup(field))
+      .join('');
+
     this.root.innerHTML = `
       <h2 class="panel-title">Controls</h2>
-
-      <label class="field" for="ctrl-m1">
-        <span class="field-label">m1 / kg</span>
-        <span class="field-row">
-          <input id="ctrl-m1" type="range" min="0.5" max="10" step="0.1" value="${DEFAULTS.m1}" />
-          <output id="ctrl-m1-out">${DEFAULTS.m1.toFixed(1)}</output>
-        </span>
-      </label>
-
-      <label class="field" for="ctrl-m2">
-        <span class="field-label">m2 / kg</span>
-        <span class="field-row">
-          <input id="ctrl-m2" type="range" min="0.5" max="10" step="0.1" value="${DEFAULTS.m2}" />
-          <output id="ctrl-m2-out">${DEFAULTS.m2.toFixed(1)}</output>
-        </span>
-      </label>
-
-      <label class="field" for="ctrl-angle">
-        <span class="field-label">incline θ / °</span>
-        <span class="field-row">
-          <input id="ctrl-angle" type="range" min="0" max="90" step="1" value="${DEFAULTS.angleDegrees}" />
-          <output id="ctrl-angle-out">${DEFAULTS.angleDegrees.toFixed(0)}</output>
-        </span>
-        <span class="field-hint">90° is the Atwood case — both masses hang vertically.</span>
-      </label>
-
-      <label class="field" for="ctrl-mu">
-        <span class="field-label">friction μ</span>
-        <span class="field-row">
-          <input id="ctrl-mu" type="range" min="0" max="1" step="0.05" value="${DEFAULTS.mu}" />
-          <output id="ctrl-mu-out">${Number(DEFAULTS.mu).toFixed(2)}</output>
-        </span>
-        <span class="field-hint">μ = 0 is the smooth case. Friction on m1 opposes its motion.</span>
-      </label>
-
+      ${fields}
       <div class="actions">
         <button type="button" id="ctrl-run">Run</button>
         <button type="button" id="ctrl-reset">Reset</button>
       </div>
     `;
 
-    this.m1Input = this.root.querySelector('#ctrl-m1')!;
-    this.m2Input = this.root.querySelector('#ctrl-m2')!;
-    this.angleInput = this.root.querySelector('#ctrl-angle')!;
-    this.muInput = this.root.querySelector('#ctrl-mu')!;
-    this.m1Out = this.root.querySelector('#ctrl-m1-out')!;
-    this.m2Out = this.root.querySelector('#ctrl-m2-out')!;
-    this.angleOut = this.root.querySelector('#ctrl-angle-out')!;
-    this.muOut = this.root.querySelector('#ctrl-mu-out')!;
+    for (const field of this.experiment.controls) {
+      this.inputs.set(field.id, this.root.querySelector(`#ctrl-${field.id}`)!);
+      this.outputs.set(field.id, this.root.querySelector(`#ctrl-${field.id}-out`)!);
+    }
   }
 
   private bind(): void {
     const emit = (): void => {
-      this.m1Out.value = Number(this.m1Input.value).toFixed(1);
-      this.m2Out.value = Number(this.m2Input.value).toFixed(1);
-      this.angleOut.value = Number(this.angleInput.value).toFixed(0);
-      this.muOut.value = Number(this.muInput.value).toFixed(2);
+      for (const field of this.experiment.controls) {
+        const input = this.inputs.get(field.id);
+        const output = this.outputs.get(field.id);
+        if (input && output) {
+          output.value = Number(input.value).toFixed(field.digits);
+        }
+      }
       this.handlers.onChange(this.getConfig());
     };
 
-    this.m1Input.addEventListener('input', emit);
-    this.m2Input.addEventListener('input', emit);
-    this.angleInput.addEventListener('input', emit);
-    this.muInput.addEventListener('input', emit);
+    for (const input of this.inputs.values()) {
+      input.addEventListener('input', emit);
+    }
 
     this.root.querySelector('#ctrl-run')!.addEventListener('click', () => {
       this.handlers.onRun();
@@ -116,4 +72,18 @@ export class ControlPanel {
       this.handlers.onReset();
     });
   }
+}
+
+function fieldMarkup(field: ControlField): string {
+  const hint = field.hint ? `<span class="field-hint">${field.hint}</span>` : '';
+  return `
+    <label class="field" for="ctrl-${field.id}">
+      <span class="field-label">${field.label}</span>
+      <span class="field-row">
+        <input id="ctrl-${field.id}" type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${field.value}" />
+        <output id="ctrl-${field.id}-out">${field.value.toFixed(field.digits)}</output>
+      </span>
+      ${hint}
+    </label>
+  `;
 }

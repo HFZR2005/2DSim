@@ -50,6 +50,28 @@ export const scenarios: Scenario[] = [
     options: [],
   },
   {
+    slug: 'connected-particles',
+    title: 'Connected particles',
+    path: ['Dynamics', 'Connected particles'],
+    summary:
+      'Two particles on one horizontal surface, joined by a string and pulled by a horizontal force.',
+    description:
+      'Connected particles: two masses on one horizontal surface joined by a light inextensible string. A horizontal force P on the leading particle gives one acceleration and one tension. Resolve the system for a, then the trailer for T; μ = 0 is smooth.',
+    dateModified: '2026-09-05',
+    tags: [
+      'dynamics',
+      'connected particles',
+      'string',
+      'tension',
+      'friction',
+      'horizontal',
+      'two masses',
+      'force',
+    ],
+    status: 'available',
+    options: [],
+  },
+  {
     slug: 'ladder-against-wall',
     title: 'Ladder against a wall',
     path: ['Statics', 'Ladder'],

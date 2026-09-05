@@ -12,7 +12,7 @@ const path = scenario.path.join(' · ');
 const activeOption = scenario.options.find((option) => option.status === 'available');
 ---
 
-<div class="sim-app">
+<div class="sim-app" data-slug={scenario.slug}>
   <header class="sim-header">
     <div class="scenario-identity" id="scenario-switcher">
       <div class="scenario-identity-row">
@@ -96,7 +96,9 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
 </div>
 
 <script>
+  import { connectedParticlesWorkbench } from './connectedParticlesWorkbench';
   import { ControlPanel } from './ControlPanel';
+  import { pulleyWorkbench } from './pulleyWorkbench';
   import { ScenarioSwitcher } from './ScenarioSwitcher';
   import { SimulatorCanvas } from './SimulatorCanvas';
 
@@ -104,14 +106,17 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
   const readout = document.querySelector<HTMLElement>('#sim-readout');
   const panelRoot = document.querySelector<HTMLElement>('#control-panel');
   const switcherRoot = document.querySelector<HTMLElement>('#scenario-switcher');
+  const slug = document.querySelector<HTMLElement>('.sim-app')?.dataset.slug ?? '';
+  const experiment =
+    slug === 'connected-particles' ? connectedParticlesWorkbench : pulleyWorkbench;
 
   if (switcherRoot) {
     new ScenarioSwitcher(switcherRoot);
   }
 
   if (canvas && readout && panelRoot) {
-    const simulator = new SimulatorCanvas(canvas, readout);
-    const panel = new ControlPanel(panelRoot, {
+    const simulator = new SimulatorCanvas(canvas, readout, experiment);
+    const panel = new ControlPanel(panelRoot, experiment, {
       onChange: (config) => simulator.setConfig(config),
       onRun: () => simulator.run(),
       onReset: () => simulator.reset(),
