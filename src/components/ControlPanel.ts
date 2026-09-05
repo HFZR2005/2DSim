@@ -10,6 +10,7 @@ const DEFAULTS: PulleyConfig = {
   m1: 2,
   m2: 3,
   angleDegrees: 30,
+  mu: 0,
 };
 
 export class ControlPanel {
@@ -18,9 +19,11 @@ export class ControlPanel {
   private m1Input!: HTMLInputElement;
   private m2Input!: HTMLInputElement;
   private angleInput!: HTMLInputElement;
+  private muInput!: HTMLInputElement;
   private m1Out!: HTMLOutputElement;
   private m2Out!: HTMLOutputElement;
   private angleOut!: HTMLOutputElement;
+  private muOut!: HTMLOutputElement;
 
   constructor(root: HTMLElement, handlers: ControlPanelHandlers) {
     this.root = root;
@@ -34,6 +37,7 @@ export class ControlPanel {
       m1: Number(this.m1Input.value),
       m2: Number(this.m2Input.value),
       angleDegrees: Number(this.angleInput.value),
+      mu: Number(this.muInput.value),
     };
   }
 
@@ -66,6 +70,15 @@ export class ControlPanel {
         <span class="field-hint">90° is the Atwood case — both masses hang vertically.</span>
       </label>
 
+      <label class="field" for="ctrl-mu">
+        <span class="field-label">friction μ</span>
+        <span class="field-row">
+          <input id="ctrl-mu" type="range" min="0" max="1" step="0.05" value="${DEFAULTS.mu}" />
+          <output id="ctrl-mu-out">${Number(DEFAULTS.mu).toFixed(2)}</output>
+        </span>
+        <span class="field-hint">μ = 0 is the smooth case. Friction on m1 opposes its motion.</span>
+      </label>
+
       <div class="actions">
         <button type="button" id="ctrl-run">Run</button>
         <button type="button" id="ctrl-reset">Reset</button>
@@ -75,9 +88,11 @@ export class ControlPanel {
     this.m1Input = this.root.querySelector('#ctrl-m1')!;
     this.m2Input = this.root.querySelector('#ctrl-m2')!;
     this.angleInput = this.root.querySelector('#ctrl-angle')!;
+    this.muInput = this.root.querySelector('#ctrl-mu')!;
     this.m1Out = this.root.querySelector('#ctrl-m1-out')!;
     this.m2Out = this.root.querySelector('#ctrl-m2-out')!;
     this.angleOut = this.root.querySelector('#ctrl-angle-out')!;
+    this.muOut = this.root.querySelector('#ctrl-mu-out')!;
   }
 
   private bind(): void {
@@ -85,12 +100,14 @@ export class ControlPanel {
       this.m1Out.value = Number(this.m1Input.value).toFixed(1);
       this.m2Out.value = Number(this.m2Input.value).toFixed(1);
       this.angleOut.value = Number(this.angleInput.value).toFixed(0);
+      this.muOut.value = Number(this.muInput.value).toFixed(2);
       this.handlers.onChange(this.getConfig());
     };
 
     this.m1Input.addEventListener('input', emit);
     this.m2Input.addEventListener('input', emit);
     this.angleInput.addEventListener('input', emit);
+    this.muInput.addEventListener('input', emit);
 
     this.root.querySelector('#ctrl-run')!.addEventListener('click', () => {
       this.handlers.onRun();

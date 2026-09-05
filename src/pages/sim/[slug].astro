@@ -2,6 +2,8 @@
 import Simulator from '../../components/Simulator.astro';
 import { availableScenarios, getScenario, scenarios } from '../../catalog/scenarios';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Explanation from '../../scenarios/two-particle-pulley/Explanation.astro';
+import WorkedExample from '../../scenarios/two-particle-pulley/WorkedExample.astro';
 
 export function getStaticPaths() {
   return availableScenarios().map((scenario) => ({
@@ -15,8 +17,19 @@ const scenario = slug ? getScenario(slug) : undefined;
 if (!scenario || scenario.status !== 'available') {
   return Astro.redirect('/');
 }
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: scenario.title,
+  description: scenario.description,
+  dateModified: scenario.dateModified,
+};
 ---
 
-<BaseLayout title={`2DSim — ${scenario.title}`}>
-  <Simulator scenario={scenario} catalog={scenarios} />
+<BaseLayout title={`2DSim — ${scenario.title}`} description={scenario.description} jsonLd={jsonLd}>
+  <Simulator scenario={scenario} catalog={scenarios}>
+    <Explanation slot="explanation" />
+    <WorkedExample slot="worked-example" />
+  </Simulator>
 </BaseLayout>

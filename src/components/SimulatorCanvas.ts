@@ -12,7 +12,7 @@ export class SimulatorCanvas {
   private readonly canvas: HTMLCanvasElement;
   private readonly readout: HTMLElement;
   private readonly ctx: CanvasRenderingContext2D;
-  private config: PulleyConfig = { m1: 2, m2: 3, angleDegrees: 30 };
+  private config: PulleyConfig = { m1: 2, m2: 3, angleDegrees: 30, mu: 0 };
   private running = false;
   private startMs = 0;
   private elapsed = 0;
@@ -134,6 +134,8 @@ export class SimulatorCanvas {
       <div class="row"><span class="k">m1</span><span class="v">${fmt(r.m1, 2)} kg</span></div>
       <div class="row"><span class="k">m2</span><span class="v">${fmt(r.m2, 2)} kg</span></div>
       <div class="row"><span class="k">θ</span><span class="v">${fmt(r.angleDegrees, 1)}°</span></div>
+      <div class="row"><span class="k">μ</span><span class="v">${fmt(r.mu, 2)}</span></div>
+      <div class="row"><span class="k">F</span><span class="v">${fmt(r.frictionForce, 2)} N</span></div>
       <div class="row spacer"></div>
       <div class="row"><span class="k">a</span><span class="v">${fmt(r.acceleration, 2)} m/s²</span></div>
       <div class="row accent"><span class="k">T</span><span class="v">${fmt(r.tension, 2)} N</span></div>

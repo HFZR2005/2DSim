@@ -90,14 +90,8 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
   </div>
 
   <div class="placeholders">
-    <section>
-      <h2>Explanation</h2>
-      <p>Placeholder — force resolution, common tension, and the closed-form expressions for a and T will go here.</p>
-    </section>
-    <section>
-      <h2>Worked example</h2>
-      <p>Placeholder — a fully worked numerical example for the current scenario will go here.</p>
-    </section>
+    <slot name="explanation" />
+    <slot name="worked-example" />
   </div>
 </div>
 

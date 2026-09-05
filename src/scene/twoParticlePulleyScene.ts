@@ -23,6 +23,8 @@ export type SceneReadout = {
   m1: number;
   m2: number;
   angleDegrees: number;
+  mu: number;
+  frictionForce: number;
   acceleration: number;
   tension: number;
   velocity: number;
@@ -114,6 +116,8 @@ export function layoutTwoParticlePulley(input: SceneInput): DrawableScene {
       m1: config.m1,
       m2: config.m2,
       angleDegrees: clampAngle(config.angleDegrees),
+      mu: physics.mu,
+      frictionForce: physics.frictionForce,
       acceleration: physics.acceleration,
       tension: physics.tension,
       velocity: motion.velocity,

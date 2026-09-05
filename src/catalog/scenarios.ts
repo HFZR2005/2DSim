@@ -12,6 +12,10 @@ export type Scenario = {
   /** Topic · setup, e.g. Dynamics · Pulley */
   path: string[];
   summary: string;
+  /** Meta description + Article schema. Same wording everywhere it is used. */
+  description: string;
+  /** ISO date of the last real copy/physics edit. Required once the experiment is available. */
+  dateModified?: string;
   /** Tokens for search. Include the topic id used by filter chips. */
   tags: string[];
   status: ScenarioStatus;
@@ -38,18 +42,20 @@ export const scenarios: Scenario[] = [
     path: ['Dynamics', 'Pulley'],
     summary:
       'Two particles joined by a light inextensible string over a smooth pulley; one sits on an incline.',
-    tags: ['dynamics', 'pulley', 'incline', 'two masses', 'string', 'tension', 'atwood'],
+    description:
+      'Two-particle pulley: two masses joined by a light inextensible string over a smooth pulley share one acceleration and one tension. Resolve along the string, include friction on the incline when μ > 0, then solve for a and T.',
+    dateModified: '2026-09-05',
+    tags: ['dynamics', 'pulley', 'incline', 'two masses', 'string', 'tension', 'atwood', 'friction'],
     status: 'available',
-    options: [
-      { id: 'smooth', label: 'Smooth incline', status: 'available' },
-      { id: 'rough', label: 'Rough incline', status: 'coming' },
-    ],
+    options: [],
   },
   {
     slug: 'ladder-against-wall',
     title: 'Ladder against a wall',
     path: ['Statics', 'Ladder'],
     summary: 'A ladder leaning on a wall; resolve forces and friction at the contacts.',
+    description:
+      'Ladder against a wall: resolve forces and friction at the contacts so the ladder is in equilibrium.',
     tags: ['statics', 'ladder', 'wall', 'friction', 'equilibrium', 'moments'],
     status: 'coming',
     options: [],
@@ -59,6 +65,7 @@ export const scenarios: Scenario[] = [
     title: 'Springs',
     path: ['Dynamics', 'Spring'],
     summary: 'Hooke’s law, extension, and energy in a light spring.',
+    description: 'Springs: Hooke’s law, extension, and energy in a light spring.',
     tags: ['dynamics', 'oscillations', 'spring', 'hooke', 'extension', 'energy'],
     status: 'coming',
     options: [],
@@ -68,6 +75,7 @@ export const scenarios: Scenario[] = [
     title: 'Simple harmonic motion',
     path: ['Oscillations', 'SHM'],
     summary: 'Displacement, velocity, and acceleration in SHM.',
+    description: 'Simple harmonic motion: displacement, velocity, and acceleration in SHM.',
     tags: ['oscillations', 'shm', 'spring', 'pendulum', 'frequency', 'amplitude'],
     status: 'coming',
     options: [],
