@@ -49,12 +49,42 @@ body {
   text-transform: uppercase;
 }
 
-.sim-header > span {
+.sim-header > span,
+.header-tools {
   color: var(--ink-dim);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   flex-shrink: 0;
+}
+
+.header-tools {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+#stage-full-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+#stage-full-btn:hover,
+#stage-full-btn[aria-pressed='true'] {
+  color: var(--ink);
+}
+
+#stage-full-btn:focus-visible {
+  outline: 1px solid #c8c8c8;
+  outline-offset: 4px;
 }
 
 .wordmark {
@@ -752,5 +782,34 @@ body {
     width: min(240px, 38vw);
     border-left: 1px solid var(--line);
     border-top: 0;
+  }
+}
+
+.sim-app.is-stage-full {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.sim-app.is-stage-full .placeholders {
+  display: none;
+}
+
+.sim-app.is-stage-full .sim-main {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.sim-app.is-stage-full .sim-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .sim-app.is-stage-full .control-panel {
+    max-height: 40dvh;
+    overflow: auto;
   }
 }

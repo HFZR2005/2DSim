@@ -54,7 +54,12 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
         <a class="switcher-index" href="/">All experiments</a>
       </div>
     </div>
-    <span><InstTags items={['A-level mechanics', 'v0']} /></span>
+    <div class="header-tools">
+      <span><InstTags items={['A-level mechanics', 'v0']} /></span>
+      <button type="button" id="stage-full-btn" aria-pressed="false" aria-label="Full view">
+        [Full]
+      </button>
+    </div>
   </header>
 
   <div class="sim-main">
@@ -105,13 +110,15 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
   import { variableAccelerationWorkbench } from './variableAccelerationWorkbench';
   import { ScenarioSwitcher } from './ScenarioSwitcher';
   import { SimulatorCanvas } from './SimulatorCanvas';
+  import { StageFull } from './StageFull';
   import type { Experiment } from './workbenchTypes';
 
+  const app = document.querySelector<HTMLElement>('.sim-app');
   const canvas = document.querySelector<HTMLCanvasElement>('#sim-canvas');
   const readout = document.querySelector<HTMLElement>('#sim-readout');
   const panelRoot = document.querySelector<HTMLElement>('#control-panel');
   const switcherRoot = document.querySelector<HTMLElement>('#scenario-switcher');
-  const slug = document.querySelector<HTMLElement>('.sim-app')?.dataset.slug ?? '';
+  const slug = app?.dataset.slug ?? '';
   const workbenches: Record<string, Experiment<unknown>> = {
     'two-particle-pulley': pulleyWorkbench,
     'connected-particles': connectedParticlesWorkbench,
@@ -124,6 +131,10 @@ const activeOption = scenario.options.find((option) => option.status === 'availa
 
   if (switcherRoot) {
     new ScenarioSwitcher(switcherRoot);
+  }
+
+  if (app) {
+    new StageFull(app);
   }
 
   if (canvas && readout && panelRoot) {
