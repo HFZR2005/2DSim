@@ -13,7 +13,7 @@ compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
-binding = "study_tracker"
+binding = "DB"
 database_name = "study-tracker"
 database_id = "c904898e-badc-4bb0-a4ef-021ecf4ece11"
 migrations_dir = "migrations"
