@@ -1,5 +1,6 @@
 ---
 import Simulator from '../../components/Simulator.astro';
+
 import { availableScenarios, getScenario, scenarios } from '../../catalog/scenarios';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ConnectedExplanation from '../../scenarios/connected-particles/Explanation.astro';
@@ -14,6 +15,8 @@ import PulleyExplanation from '../../scenarios/two-particle-pulley/Explanation.a
 import PulleyWorkedExample from '../../scenarios/two-particle-pulley/WorkedExample.astro';
 import VariableExplanation from '../../scenarios/variable-acceleration/Explanation.astro';
 import VariableWorkedExample from '../../scenarios/variable-acceleration/WorkedExample.astro';
+
+export const prerender = true;
 
 export function getStaticPaths() {
   return availableScenarios().map((scenario) => ({

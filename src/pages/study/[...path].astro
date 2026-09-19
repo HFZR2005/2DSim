@@ -1,0 +1,18 @@
+---
+export const prerender = false;
+
+const path = Astro.params.path ?? '';
+if (path === 'login' || path.startsWith('login/')) {
+  return Astro.redirect(`/login${Astro.url.search}`);
+}
+if (path === 'log' || path.startsWith('log/')) {
+  return Astro.redirect(`/log${Astro.url.search}`);
+}
+if (path === 'topics' || path.startsWith('topics/')) {
+  return Astro.redirect(`/topics${Astro.url.search}`);
+}
+if (path === 'history' || path.startsWith('history/')) {
+  return Astro.redirect(`/history${Astro.url.search}`);
+}
+return Astro.redirect(`/${path}${Astro.url.search}`);
+---

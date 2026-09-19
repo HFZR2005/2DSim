@@ -1,0 +1,58 @@
+---
+import '../study/app/styles.css';
+
+export const prerender = false;
+
+const requested = Astro.url.searchParams.get('next') ?? '/';
+const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>Study Tracker — Sign in</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="study-login-body">
+    <main class="study-login">
+      <h1>Study Tracker</h1>
+      <p>Enter the shared PIN to continue.</p>
+      <form id="study-login-form" method="post">
+        <label for="pin">PIN</label>
+        <input id="pin" name="pin" type="password" autocomplete="current-password" required />
+        <p id="study-login-error" class="study-error" hidden></p>
+        <button type="submit">Continue</button>
+      </form>
+      <p><a href="/lab">Mechanics lab</a> is public and does not need a PIN.</p>
+    </main>
+    <script define:vars={{ next }}>
+      const form = document.getElementById('study-login-form');
+      const error = document.getElementById('study-login-error');
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const pin = new FormData(form).get('pin');
+        const response = await fetch('/api/study/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({ error: 'Could not sign in' }));
+          if (error) {
+            error.hidden = false;
+            error.textContent = body.error ?? 'Could not sign in';
+          }
+          return;
+        }
+        window.location.assign(next);
+      });
+    </script>
+  </body>
+</html>

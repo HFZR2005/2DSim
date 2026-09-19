@@ -9,13 +9,23 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "db:migrate": "wrangler d1 migrations apply study-tracker --local",
+    "db:migrate:remote": "wrangler d1 migrations apply study-tracker --remote"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.3.2",
+    "@astrojs/preact": "^6.0.5",
     "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.3.1"
+    "astro": "^7.3.1",
+    "preact": "^10.29.8",
+    "zod": "^4.6.5"
   },
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "workerd@1.20260918.1": true
+  },
+  "devDependencies": {
+    "wrangler": "^4.135.0"
   }
 }

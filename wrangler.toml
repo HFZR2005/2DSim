@@ -1,0 +1,19 @@
+# Pages / Workers deploy
+# 1. Create D1: npx wrangler d1 create study-tracker
+# 2. Replace database_id below with the real UUID.
+# 3. Apply schema: npm run db:migrate:remote
+# 4. Set the PIN secret (never commit it):
+#      npx wrangler secret put STUDY_PIN
+#    Locally, copy .dev.vars.example to .dev.vars.
+# 5. In the Cloudflare Pages project for mechanicslab.org, bind D1 as DB
+#    (same database) if the dashboard does not pick this file up.
+
+name = "mechanicslab"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "study_tracker"
+database_name = "study-tracker"
+database_id = "c904898e-badc-4bb0-a4ef-021ecf4ece11"
+migrations_dir = "migrations"
