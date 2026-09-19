@@ -1,7 +1,7 @@
 # Workers deploy (not classic Pages): npm run deploy
 # D1: npm run db:migrate:remote
-# PIN: npx wrangler secret put STUDY_PIN
-# Local PIN: copy .dev.vars.example to .dev.vars
+# Secrets: STUDY_PIN (bootstrap), AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# Local: copy .dev.vars.example to .dev.vars
 
 name = "mechanicslab"
 main = "@astrojs/cloudflare/entrypoints/server"

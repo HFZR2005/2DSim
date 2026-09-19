@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { parseCookie, STUDY_COOKIE } from './study/auth/cookie';
+import { isSignedStudyToken, parseCookie, STUDY_COOKIE } from './study/auth/cookie';
 
 const TRACKER_PAGES = new Set(['/', '/log', '/topics', '/history']);
 
@@ -8,7 +8,12 @@ function isProtectedPath(pathname: string): boolean {
 }
 
 function isPublicApi(pathname: string): boolean {
-  return pathname === '/api/study/login';
+  return (
+    pathname === '/api/study/login' ||
+    pathname === '/api/study/auth/config' ||
+    pathname === '/api/study/auth/google' ||
+    pathname === '/api/study/auth/google/callback'
+  );
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -18,7 +23,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const token = parseCookie(context.request.headers.get('cookie'), STUDY_COOKIE);
-  if (token?.startsWith('v1.')) {
+  if (isSignedStudyToken(token)) {
     return next();
   }
 

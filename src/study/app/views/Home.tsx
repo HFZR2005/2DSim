@@ -7,6 +7,8 @@ type Props = {
   students: StudentSummary[];
   sessions: SessionRecord[];
   tests: TestRecord[];
+  canManage: boolean;
+  pending: boolean;
   onLog: () => void;
   onSelectStudent: (id: string) => void;
 };
@@ -36,13 +38,19 @@ function RecentRow({ entry }: { entry: Recent }) {
   );
 }
 
-export function Home({ studentId, students, sessions, tests, onLog, onSelectStudent }: Props) {
+export function Home({ studentId, students, sessions, tests, canManage, pending, onLog, onSelectStudent }: Props) {
   if (!studentId) {
     return (
       <section class="page">
         <h1>Students</h1>
-        {students.length === 0 ? (
-          <p class="empty">Add a student in the sidebar to start logging practice and tests.</p>
+        {pending ? (
+          <p class="empty">You are signed in. Ask staff to attach this Google email to a student.</p>
+        ) : students.length === 0 ? (
+          <p class="empty">
+            {canManage
+              ? 'Add a student in the sidebar to start logging practice and tests.'
+              : 'No students are attached to this account yet.'}
+          </p>
         ) : (
           <ul class="student-grid">
             {students.map((student) => (

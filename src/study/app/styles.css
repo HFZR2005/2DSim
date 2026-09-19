@@ -127,11 +127,23 @@ h2 {
   font-size: 0.95rem;
 }
 
+.staff-tools,
 .add-student {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: auto;
+}
+
+.staff-tools {
+  margin-top: 8px;
+}
+
+.nav-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #c9ced8;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .add-student button,
@@ -161,6 +173,7 @@ h2 {
   border: 0;
   text-align: left;
   padding: 0;
+  margin-top: auto;
 }
 
 .study-content {
@@ -447,6 +460,18 @@ td {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.google-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: var(--study-indigo);
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--study-display);
+  margin-bottom: 16px;
 }
 
 @media (max-width: 900px) {

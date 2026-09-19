@@ -47,3 +47,19 @@ export const createTestSchema = z
 export const loginSchema = z.object({
   pin: z.string().min(1).max(80),
 });
+
+export const grantAccessSchema = z
+  .object({
+    email: z.email().max(160),
+    kind: z.enum(['staff', 'adult', 'self']),
+    studentId: z.string().trim().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.kind !== 'staff' && !value.studentId) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Choose a student',
+        path: ['studentId'],
+      });
+    }
+  });

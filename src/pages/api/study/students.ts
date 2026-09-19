@@ -1,5 +1,5 @@
 import { withViewer } from '../../../study/auth/guard';
-import { requireStaff, requireViewer } from '../../../study/auth/session';
+import { requireStaff, requireStudentAccess, requireViewer, visibleStudentIds } from '../../../study/auth/session';
 import { createStudent, studentSummaries } from '../../../study/db';
 import { json, readJson } from '../../../study/http';
 import { createStudentSchema } from '../../../study/schemas';
@@ -11,13 +11,12 @@ export async function GET(context: { locals: App.Locals; request: Request; url: 
     const viewer = requireViewer(context.locals);
     const requested = context.url.searchParams.get('student') ?? undefined;
     if (requested) {
-      if (viewer.role === 'student' && viewer.studentId !== requested) {
-        return json({ error: 'Not allowed for this student' }, 403);
-      }
+      requireStudentAccess(context.locals, requested);
       return json({ students: await studentSummaries(requested) });
     }
-    if (viewer.role === 'student') {
-      return json({ students: await studentSummaries(viewer.studentId) });
+    const allowed = visibleStudentIds(viewer);
+    if (allowed) {
+      return json({ students: await studentSummaries(undefined, allowed) });
     }
     return json({ students: await studentSummaries() });
   });

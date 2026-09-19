@@ -139,6 +139,34 @@ export function createTest(
   });
 }
 
+export type ViewerInfo =
+  | { role: 'staff'; userId?: string }
+  | { role: 'adult'; userId: string; studentIds: string[] }
+  | { role: 'student'; userId: string; studentId: string }
+  | { role: 'pending'; userId: string };
+
+export type AccessRecord = {
+  id: string;
+  email: string;
+  student_id: string | null;
+  kind: 'staff' | 'adult' | 'self';
+};
+
+export function fetchMe() {
+  return request<{ viewer: ViewerInfo; email: string | null; displayName: string | null }>('/api/study/me');
+}
+
+export function fetchAccess(studentId: string) {
+  return request<{ access: AccessRecord[] }>(`/api/study/access?student=${encodeURIComponent(studentId)}`);
+}
+
+export function grantAccess(body: { email: string; kind: 'staff' | 'adult' | 'self'; studentId?: string }) {
+  return request<{ access: AccessRecord }>('/api/study/access', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function logout() {
   return request<{ ok: boolean }>('/api/study/logout', { method: 'POST' });
 }

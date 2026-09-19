@@ -1,10 +1,22 @@
 ---
+import { hasStaffAccess } from '../study/db';
+import { getGoogleOAuth } from '../study/env';
 import '../study/app/styles.css';
 
 export const prerender = false;
 
 const requested = Astro.url.searchParams.get('next') ?? '/';
 const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/';
+const error = Astro.url.searchParams.get('error');
+
+let pinEnabled = true;
+let googleEnabled = false;
+try {
+  pinEnabled = !(await hasStaffAccess());
+  googleEnabled = Boolean(getGoogleOAuth());
+} catch {
+  pinEnabled = true;
+}
 ---
 
 <html lang="en">
@@ -23,36 +35,59 @@ const next = requested.startsWith('/') && !requested.startsWith('//') ? requeste
   <body class="study-login-body">
     <main class="study-login">
       <h1>Study Tracker</h1>
-      <p>Enter the shared PIN to continue.</p>
-      <form id="study-login-form" method="post">
-        <label for="pin">PIN</label>
-        <input id="pin" name="pin" type="password" autocomplete="current-password" required />
-        <p id="study-login-error" class="study-error" hidden></p>
-        <button type="submit">Continue</button>
-      </form>
-      <p><a href="/lab">Mechanics lab</a> is public and does not need a PIN.</p>
-    </main>
-    <script define:vars={{ next }}>
-      const form = document.getElementById('study-login-form');
-      const error = document.getElementById('study-login-error');
-      form?.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const pin = new FormData(form).get('pin');
-        const response = await fetch('/api/study/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin }),
-        });
-        if (!response.ok) {
-          const body = await response.json().catch(() => ({ error: 'Could not sign in' }));
-          if (error) {
-            error.hidden = false;
-            error.textContent = body.error ?? 'Could not sign in';
-          }
-          return;
+      <p>
+        {
+          googleEnabled
+            ? 'Sign in with Google. Staff attach emails to students.'
+            : pinEnabled
+              ? 'Enter the shared PIN to continue.'
+              : 'Google sign-in is not configured yet.'
         }
-        window.location.assign(next);
-      });
-    </script>
+      </p>
+      {
+        googleEnabled && (
+          <a class="google-btn" href={`/api/study/auth/google?next=${encodeURIComponent(next)}`}>
+            Continue with Google
+          </a>
+        )
+      }
+      {
+        pinEnabled && (
+          <form id="study-login-form" method="post">
+            <label for="pin">PIN</label>
+            <input id="pin" name="pin" type="password" autocomplete="current-password" required />
+            <button type="submit">Continue</button>
+          </form>
+        )
+      }
+      <p id="study-login-error" class="study-error" hidden={!error}>{error}</p>
+      <p><a href="/lab">Mechanics lab</a> is public and does not need a sign-in.</p>
+    </main>
+    {
+      pinEnabled && (
+        <script define:vars={{ next }}>
+          const form = document.getElementById('study-login-form');
+          const errorEl = document.getElementById('study-login-error');
+          form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const pin = new FormData(form).get('pin');
+            const response = await fetch('/api/study/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pin }),
+            });
+            if (!response.ok) {
+              const body = await response.json().catch(() => ({ error: 'Could not sign in' }));
+              if (errorEl) {
+                errorEl.hidden = false;
+                errorEl.textContent = body.error ?? 'Could not sign in';
+              }
+              return;
+            }
+            window.location.assign(next);
+          });
+        </script>
+      )
+    }
   </body>
 </html>

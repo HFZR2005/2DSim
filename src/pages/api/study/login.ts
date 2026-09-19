@@ -1,4 +1,5 @@
 import { createStaffToken, serializeStudyCookie } from '../../../study/auth/cookie';
+import { hasStaffAccess } from '../../../study/db';
 import { getStudyPin } from '../../../study/env';
 import { handleApi, json, readJson } from '../../../study/http';
 import { loginSchema } from '../../../study/schemas';
@@ -17,6 +18,10 @@ export async function POST({ request, url }: { request: Request; url: URL }) {
       pin = getStudyPin();
     } catch {
       return json({ error: 'STUDY_PIN is not configured' }, 503);
+    }
+
+    if (await hasStaffAccess()) {
+      return json({ error: 'Use Google to sign in' }, 403);
     }
 
     if (parsed.data.pin !== pin) {

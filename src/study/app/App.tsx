@@ -1,5 +1,21 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { createStudent, fetchSessions, fetchStudents, fetchTests, fetchTopics, logout, type SessionRecord, type StudentSummary, type SubjectStat, type TestRecord } from './api';
+import {
+  createStudent,
+  fetchAccess,
+  fetchMe,
+  fetchSessions,
+  fetchStudents,
+  fetchTests,
+  fetchTopics,
+  grantAccess,
+  logout,
+  type AccessRecord,
+  type SessionRecord,
+  type StudentSummary,
+  type SubjectStat,
+  type TestRecord,
+  type ViewerInfo,
+} from './api';
 import { dayKey, streakFromDates } from './format';
 import { History } from './views/History';
 import { Home } from './views/Home';
@@ -35,6 +51,10 @@ export default function App() {
   const [tests, setTests] = useState<TestRecord[]>([]);
   const [topics, setTopics] = useState<SubjectStat[]>([]);
   const [newStudent, setNewStudent] = useState('');
+  const [allowEmail, setAllowEmail] = useState('');
+  const [allowKind, setAllowKind] = useState<'adult' | 'self'>('adult');
+  const [accessRows, setAccessRows] = useState<AccessRecord[]>([]);
+  const [viewer, setViewer] = useState<ViewerInfo | null>(null);
   const [error, setError] = useState('');
 
   function syncUrl(next: { view?: View; studentId?: string | null; subject?: string | null }) {
@@ -66,17 +86,35 @@ export default function App() {
   }, []);
 
   async function reload() {
+    const me = await fetchMe();
+    setViewer(me.viewer);
     const studentList = await fetchStudents();
     setStudents(studentList.students);
-    const sessionData = await fetchSessions(studentId ?? undefined);
+    let nextStudent = studentId;
+    if (me.viewer.role === 'student') {
+      nextStudent = me.viewer.studentId;
+    } else if (me.viewer.role !== 'staff' && !nextStudent && studentList.students[0]) {
+      nextStudent = studentList.students[0].id;
+    }
+    if (nextStudent !== studentId) {
+      syncUrl({ studentId: nextStudent });
+    }
+    const sessionData = await fetchSessions(nextStudent ?? undefined);
     setSessions(sessionData.sessions);
-    const testData = await fetchTests(studentId ?? undefined);
+    const testData = await fetchTests(nextStudent ?? undefined);
     setTests(testData.tests);
-    if (studentId) {
-      const topicData = await fetchTopics(studentId);
+    if (nextStudent) {
+      const topicData = await fetchTopics(nextStudent);
       setTopics(topicData.subjects);
+      if (me.viewer.role === 'staff') {
+        const accessData = await fetchAccess(nextStudent);
+        setAccessRows(accessData.access);
+      } else {
+        setAccessRows([]);
+      }
     } else {
       setTopics([]);
+      setAccessRows([]);
     }
   }
 
@@ -122,17 +160,35 @@ export default function App() {
     syncUrl({ studentId: created.student.id, view: 'home' });
   }
 
+  async function onAllowEmail(event: Event) {
+    event.preventDefault();
+    if (!studentId || !allowEmail.trim()) return;
+    try {
+      await grantAccess({ email: allowEmail.trim(), kind: allowKind, studentId });
+      setAllowEmail('');
+      const accessData = await fetchAccess(studentId);
+      setAccessRows(accessData.access);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not allow email');
+    }
+  }
+
+  const canManage = viewer?.role === 'staff';
+  const showAllStudents = canManage;
+
   return (
     <div class="study-shell">
       <aside class="study-nav">
         <p class="brand">Study Tracker</p>
+        {viewer?.role !== 'pending' && (
         <label class="student-switch">
           Student
           <select
             value={studentId ?? ''}
+            disabled={viewer?.role === 'student'}
             onChange={(event) => syncUrl({ studentId: event.currentTarget.value || null })}
           >
-            <option value="">All students</option>
+            {showAllStudents && <option value="">All students</option>}
             {students.map((student) => (
               <option key={student.id} value={student.id}>
                 {student.display_name}
@@ -140,6 +196,7 @@ export default function App() {
             ))}
           </select>
         </label>
+        )}
         {studentId && <p class="streak">{streak} day streak</p>}
         <nav aria-label="Study">
           <a
@@ -184,13 +241,52 @@ export default function App() {
           </a>
           <a href="/lab">Mechanics lab</a>
         </nav>
-        <form class="add-student" onSubmit={onAddStudent}>
-          <label>
-            Add student
-            <input value={newStudent} onInput={(event) => setNewStudent(event.currentTarget.value)} />
-          </label>
-          <button type="submit">Add</button>
-        </form>
+        {canManage && (
+          <div class="staff-tools">
+            <form class="add-student" onSubmit={onAddStudent}>
+              <label>
+                Add student
+                <input value={newStudent} onInput={(event) => setNewStudent(event.currentTarget.value)} />
+              </label>
+              <button type="submit">Add</button>
+            </form>
+            {studentId && (
+              <form class="add-student" onSubmit={onAllowEmail}>
+                <label>
+                  Allow email
+                  <input
+                    type="email"
+                    value={allowEmail}
+                    placeholder="name@gmail.com"
+                    onInput={(event) => setAllowEmail(event.currentTarget.value)}
+                  />
+                </label>
+                <div class="chips">
+                  <button
+                    type="button"
+                    class={allowKind === 'adult' ? 'chip is-active' : 'chip'}
+                    onClick={() => setAllowKind('adult')}
+                  >
+                    Adult
+                  </button>
+                  <button
+                    type="button"
+                    class={allowKind === 'self' ? 'chip is-active' : 'chip'}
+                    onClick={() => setAllowKind('self')}
+                  >
+                    Student
+                  </button>
+                </div>
+                <button type="submit">Allow</button>
+                {accessRows.length > 0 && (
+                  <p class="nav-note">
+                    {accessRows.map((row) => `${row.email} (${row.kind})`).join(' · ')}
+                  </p>
+                )}
+              </form>
+            )}
+          </div>
+        )}
         <button
           type="button"
           class="text-btn"
@@ -232,6 +328,8 @@ export default function App() {
             students={students}
             sessions={visibleSessions}
             tests={visibleTests}
+            canManage={canManage}
+            pending={viewer?.role === 'pending'}
             onLog={() => syncUrl({ view: 'log' })}
             onSelectStudent={(id) => syncUrl({ studentId: id, view: 'home' })}
           />

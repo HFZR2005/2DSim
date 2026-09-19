@@ -23,5 +23,8 @@ declare module 'cloudflare:workers' {
   export const env: {
     DB: D1Database;
     STUDY_PIN: string;
+    AUTH_SECRET?: string;
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
   };
 }

@@ -1,5 +1,5 @@
 import { withViewer } from '../../../study/auth/guard';
-import { requireStudentAccess, requireViewer } from '../../../study/auth/session';
+import { requireStudentAccess, requireViewer, visibleStudentIds } from '../../../study/auth/session';
 import { distinctSubjects, listSessions } from '../../../study/db';
 import { json } from '../../../study/http';
 
@@ -13,16 +13,16 @@ export async function GET(context: { locals: App.Locals; request: Request; url: 
 
     if (studentId) {
       requireStudentAccess(context.locals, studentId);
-    } else if (viewer.role === 'student') {
       return json({
-        sessions: await listSessions({ studentId: viewer.studentId, subject }),
-        subjects: await distinctSubjects(viewer.studentId),
+        sessions: await listSessions({ studentId, subject }),
+        subjects: await distinctSubjects(studentId),
       });
     }
 
+    const allowed = visibleStudentIds(viewer);
     return json({
-      sessions: await listSessions({ studentId, subject }),
-      subjects: await distinctSubjects(studentId),
+      sessions: await listSessions({ studentIds: allowed ?? undefined, subject }),
+      subjects: await distinctSubjects(undefined, allowed ?? undefined),
     });
   });
 }
