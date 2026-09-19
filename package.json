@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "db:migrate": "wrangler d1 migrations apply study-tracker --local",
-    "db:migrate:remote": "wrangler d1 migrations apply study-tracker --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply study-tracker --remote",
+    "deploy": "astro build && wrangler deploy -c dist/server/wrangler.json"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.2",
