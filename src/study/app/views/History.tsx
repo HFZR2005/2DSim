@@ -1,17 +1,19 @@
 import type { SessionRecord, TestRecord } from '../api';
 import { daySignals, formatDayLong, lastDays } from '../format';
+import { EvidenceCard, type EvidenceKind } from '../notes/EvidenceCard';
 import { signalColor } from '../../signal';
 
 type Props = {
   sessions: SessionRecord[];
   tests: TestRecord[];
+  onNoteSaved: (kind: EvidenceKind, item: SessionRecord | TestRecord) => void;
 };
 
 type Entry =
   | { kind: 'practice'; at: string; item: SessionRecord }
   | { kind: 'test'; at: string; item: TestRecord };
 
-export function History({ sessions, tests }: Props) {
+export function History({ sessions, tests, onNoteSaved }: Props) {
   const entries: Entry[] = [
     ...sessions.map((item) => ({ kind: 'practice' as const, at: item.created_at, item })),
     ...tests.map((item) => ({ kind: 'test' as const, at: item.created_at, item })),
@@ -39,39 +41,16 @@ export function History({ sessions, tests }: Props) {
         <p class="empty">No practice or tests match this filter.</p>
       ) : (
         <ol class="history-list">
-          {entries.map((entry) =>
-            entry.kind === 'practice' ? (
-              <li key={`practice-${entry.item.id}`}>
-                <span class="signal-dot" style={{ background: signalColor(entry.item.signal) }} aria-hidden="true" />
-                <div>
-                  <p class="session-title">
-                    Practice · {entry.item.subject} · {entry.item.topic}
-                  </p>
-                  <p class="session-meta">
-                    {formatDayLong(entry.item.created_at)}
-                    {' · '}
-                    {entry.item.score ?? entry.item.confidence}
-                    {entry.item.note ? ` · ${entry.item.note}` : ''}
-                  </p>
-                </div>
-              </li>
-            ) : (
-              <li key={`test-${entry.item.id}`}>
-                <span class="signal-dot" style={{ background: signalColor(entry.item.signal) }} aria-hidden="true" />
-                <div>
-                  <p class="session-title">
-                    Test · {entry.item.subject} · {entry.item.track} · {entry.item.title}
-                  </p>
-                  <p class="session-meta">
-                    {formatDayLong(entry.item.created_at)}
-                    {' · '}
-                    {entry.item.score ?? entry.item.confidence}
-                    {entry.item.note ? ` · ${entry.item.note}` : ''}
-                  </p>
-                </div>
-              </li>
-            ),
-          )}
+          {entries.map((entry) => (
+            <li key={`${entry.kind}-${entry.item.id}`}>
+              <EvidenceCard
+                kind={entry.kind}
+                item={entry.item}
+                dateText={formatDayLong(entry.item.created_at)}
+                onNoteSaved={onNoteSaved}
+              />
+            </li>
+          ))}
         </ol>
       )}
     </section>

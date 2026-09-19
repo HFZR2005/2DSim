@@ -17,6 +17,7 @@ import {
   type ViewerInfo,
 } from './api';
 import { dayKey, streakFromDates } from './format';
+import type { EvidenceKind } from './notes/EvidenceCard';
 import { History } from './views/History';
 import { Home } from './views/Home';
 import { Log } from './views/Log';
@@ -170,6 +171,16 @@ export default function App() {
       setAccessRows(accessData.access);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not allow email');
+    }
+  }
+
+  function onNoteSaved(kind: EvidenceKind, item: SessionRecord | TestRecord) {
+    if (kind === 'practice') {
+      const session = item as SessionRecord;
+      setSessions((rows) => rows.map((row) => (row.id === session.id ? session : row)));
+    } else {
+      const test = item as TestRecord;
+      setTests((rows) => rows.map((row) => (row.id === test.id ? test : row)));
     }
   }
 
@@ -332,6 +343,7 @@ export default function App() {
             pending={viewer?.role === 'pending'}
             onLog={() => syncUrl({ view: 'log' })}
             onSelectStudent={(id) => syncUrl({ studentId: id, view: 'home' })}
+            onNoteSaved={onNoteSaved}
           />
         )}
         {view === 'log' && (
@@ -347,7 +359,9 @@ export default function App() {
           />
         )}
         {view === 'topics' && <Topics studentId={studentId} subjects={visibleTopics} />}
-        {view === 'history' && <History sessions={visibleSessions} tests={visibleTests} />}
+        {view === 'history' && (
+          <History sessions={visibleSessions} tests={visibleTests} onNoteSaved={onNoteSaved} />
+        )}
       </div>
     </div>
   );

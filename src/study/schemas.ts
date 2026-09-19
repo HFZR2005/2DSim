@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { CONFIDENCE } from './signal';
 
+export const NOTE_MAX = 8000;
+
 export const createStudentSchema = z.object({
   displayName: z.string().trim().min(1).max(80),
 });
@@ -11,7 +13,7 @@ export const createSessionSchema = z
     topic: z.string().trim().min(1).max(120),
     score: z.string().trim().max(40).optional(),
     confidence: z.enum(CONFIDENCE).optional(),
-    note: z.string().trim().max(2000).optional(),
+    note: z.string().trim().max(NOTE_MAX).optional(),
   })
   .superRefine((value, ctx) => {
     const score = value.score?.trim() ? value.score.trim() : null;
@@ -31,7 +33,7 @@ export const createTestSchema = z
     title: z.string().trim().min(1).max(160),
     score: z.string().trim().max(40).optional(),
     confidence: z.enum(CONFIDENCE).optional(),
-    note: z.string().trim().max(2000).optional(),
+    note: z.string().trim().max(NOTE_MAX).optional(),
   })
   .superRefine((value, ctx) => {
     const score = value.score?.trim() ? value.score.trim() : null;
@@ -46,6 +48,10 @@ export const createTestSchema = z
 
 export const loginSchema = z.object({
   pin: z.string().min(1).max(80),
+});
+
+export const updateNoteSchema = z.object({
+  note: z.string().max(NOTE_MAX),
 });
 
 export const grantAccessSchema = z

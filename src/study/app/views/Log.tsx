@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { CONFIDENCE, type Confidence } from '../../signal';
 import { createSession, createTest, type SessionRecord, type TestRecord } from '../api';
+import { NotePad } from '../notes/NotePad';
 
 type Kind = 'practice' | 'test';
 
@@ -267,10 +268,15 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
           </fieldset>
         )}
 
-        <label>
-          Note (optional)
-          <textarea value={note} rows={3} onInput={(event) => setNote(event.currentTarget.value)} />
-        </label>
+        <fieldset class="note-field">
+          <legend>Reflection</legend>
+          <p class="muted">What clicked, what stalled, what to try next. Markdown is fine.</p>
+          <NotePad
+            value={note}
+            onInput={setNote}
+            placeholder="The last two questions were the same idea in disguise. Next time, start by naming the method."
+          />
+        </fieldset>
 
         {error && <p class="study-error">{error}</p>}
         <button type="submit" class="primary" disabled={saving}>

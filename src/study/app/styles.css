@@ -241,7 +241,8 @@ h2 {
 
 .student-card,
 .session-row,
-.topic-card {
+.topic-card,
+.evidence-card {
   background: var(--study-card);
   border: 1px solid var(--study-line);
   border-radius: var(--study-radius);
@@ -266,8 +267,7 @@ h2 {
   gap: 10px;
 }
 
-.session-row,
-.history-list li {
+.session-row {
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -377,23 +377,195 @@ td {
 .history-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 16px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .history-list li {
-  background: var(--study-card);
+  margin: 0;
+}
+
+.evidence-card {
+  overflow: hidden;
+}
+
+.evidence-card.is-open {
+  grid-column: 1 / -1;
+}
+
+.evidence-head {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.evidence-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.evidence-caret {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-family: var(--study-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--study-indigo);
+}
+
+.evidence-note {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evidence-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.note-field .muted {
+  margin: 0 0 10px;
+}
+
+.notepad {
   border: 1px solid var(--study-line);
   border-radius: var(--study-radius);
+  background: var(--study-bg);
+  overflow: hidden;
+}
+
+.notepad-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--study-line);
+  background: var(--study-card);
+}
+
+.notepad-modes,
+.notepad-format {
+  display: flex;
+  gap: 4px;
+}
+
+.notepad-toolbar button {
+  font: inherit;
+  font-size: 0.78rem;
+  font-family: var(--study-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--study-muted);
+  cursor: pointer;
+}
+
+.notepad-toolbar button.is-active,
+.notepad-toolbar button:hover {
+  color: var(--study-ink);
+  border-color: var(--study-line);
+  background: var(--study-bg);
+}
+
+.notepad-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--study-muted);
+}
+
+.notepad-input,
+.notepad-preview {
+  width: 100%;
+  min-height: 180px;
+  padding: 14px 16px;
+  border: 0;
+  background: var(--study-bg);
+  color: inherit;
+  font: inherit;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  resize: none;
+}
+
+.notepad-input:focus {
+  outline: none;
+  background: #fff;
+}
+
+.notepad-preview {
+  overflow: auto;
+}
+
+.note-prose {
+  max-width: 40rem;
+}
+
+.note-prose > *:first-child {
+  margin-top: 0;
+}
+
+.note-prose > *:last-child {
+  margin-bottom: 0;
+}
+
+.note-prose p,
+.note-prose ul,
+.note-prose ol,
+.note-prose blockquote {
+  margin: 0 0 0.85em;
+}
+
+.note-prose ul,
+.note-prose ol {
+  padding-left: 1.2em;
+}
+
+.note-prose h1,
+.note-prose h2,
+.note-prose h3 {
+  font-family: var(--study-display);
+  font-size: 1.05rem;
+  margin: 0 0 0.5em;
+}
+
+.note-prose code {
+  font-size: 0.9em;
+  background: #fff;
+  border: 1px solid var(--study-line);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.note-prose a {
+  color: var(--study-indigo);
 }
 
 .log-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 36rem;
+  max-width: 44rem;
 }
 
 .log-form fieldset {

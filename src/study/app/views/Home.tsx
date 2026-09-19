@@ -1,5 +1,6 @@
 import type { SessionRecord, StudentSummary, TestRecord } from '../api';
 import { daySignals, formatDay, formatPercent, lastDays } from '../format';
+import { EvidenceCard, type EvidenceKind } from '../notes/EvidenceCard';
 import { signalColor } from '../../signal';
 
 type Props = {
@@ -11,34 +12,24 @@ type Props = {
   pending: boolean;
   onLog: () => void;
   onSelectStudent: (id: string) => void;
+  onNoteSaved: (kind: EvidenceKind, item: SessionRecord | TestRecord) => void;
 };
 
 type Recent =
   | { kind: 'practice'; at: string; item: SessionRecord }
   | { kind: 'test'; at: string; item: TestRecord };
 
-function RecentRow({ entry }: { entry: Recent }) {
-  const item = entry.item;
-  const title =
-    entry.kind === 'practice'
-      ? `Practice · ${item.subject} · ${item.topic}`
-      : `Test · ${item.subject} · ${item.track} · ${item.title}`;
-  return (
-    <article class="session-row">
-      <span class="signal-dot" style={{ background: signalColor(item.signal) }} aria-hidden="true" />
-      <div>
-        <p class="session-title">{title}</p>
-        <p class="session-meta">
-          {formatDay(item.created_at)}
-          {' · '}
-          {item.score ?? item.confidence}
-        </p>
-      </div>
-    </article>
-  );
-}
-
-export function Home({ studentId, students, sessions, tests, canManage, pending, onLog, onSelectStudent }: Props) {
+export function Home({
+  studentId,
+  students,
+  sessions,
+  tests,
+  canManage,
+  pending,
+  onLog,
+  onSelectStudent,
+  onNoteSaved,
+}: Props) {
   if (!studentId) {
     return (
       <section class="page">
@@ -117,7 +108,13 @@ export function Home({ studentId, students, sessions, tests, canManage, pending,
       ) : (
         <div class="session-grid">
           {recent.slice(0, 8).map((entry) => (
-            <RecentRow key={`${entry.kind}-${entry.item.id}`} entry={entry} />
+            <EvidenceCard
+              key={`${entry.kind}-${entry.item.id}`}
+              kind={entry.kind}
+              item={entry.item}
+              dateText={formatDay(entry.item.created_at)}
+              onNoteSaved={onNoteSaved}
+            />
           ))}
         </div>
       )}

@@ -139,6 +139,20 @@ export function createTest(
   });
 }
 
+export function updateSessionNote(studentId: string, sessionId: string, note: string) {
+  return request<{ session: SessionRecord }>(`/api/study/students/${studentId}/sessions/${sessionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export function updateTestNote(studentId: string, testId: string, note: string) {
+  return request<{ test: TestRecord }>(`/api/study/students/${studentId}/tests/${testId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ note }),
+  });
+}
+
 export type ViewerInfo =
   | { role: 'staff'; userId?: string }
   | { role: 'adult'; userId: string; studentIds: string[] }

@@ -198,6 +198,29 @@ export async function createSession(input: {
   return withSignal(row);
 }
 
+export async function getSession(studentId: string, sessionId: string): Promise<SessionRecord | null> {
+  const row = await db()
+    .prepare(
+      `SELECT id, student_id, subject, topic, score, confidence, note, created_at
+       FROM sessions WHERE id = ? AND student_id = ?`,
+    )
+    .bind(sessionId, studentId)
+    .first<SessionRow>();
+  return row ? withSignal(row) : null;
+}
+
+export async function updateSessionNote(
+  studentId: string,
+  sessionId: string,
+  note: string | null,
+): Promise<SessionRecord | null> {
+  await db()
+    .prepare('UPDATE sessions SET note = ? WHERE id = ? AND student_id = ?')
+    .bind(note, sessionId, studentId)
+    .run();
+  return getSession(studentId, sessionId);
+}
+
 export async function listTests(filters: {
   studentId?: string;
   studentIds?: string[];
@@ -265,6 +288,29 @@ export async function createTest(input: {
     .first<TestRow>();
   if (!row) throw new Error('Test insert failed');
   return withTestSignal(row);
+}
+
+export async function getTest(studentId: string, testId: string): Promise<TestRecord | null> {
+  const row = await db()
+    .prepare(
+      `SELECT id, student_id, subject, track, title, score, confidence, note, created_at
+       FROM tests WHERE id = ? AND student_id = ?`,
+    )
+    .bind(testId, studentId)
+    .first<TestRow>();
+  return row ? withTestSignal(row) : null;
+}
+
+export async function updateTestNote(
+  studentId: string,
+  testId: string,
+  note: string | null,
+): Promise<TestRecord | null> {
+  await db()
+    .prepare('UPDATE tests SET note = ? WHERE id = ? AND student_id = ?')
+    .bind(note, testId, studentId)
+    .run();
+  return getTest(studentId, testId);
 }
 
 export async function studentSummaries(studentId?: string, studentIds?: string[]): Promise<StudentSummary[]> {
