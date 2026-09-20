@@ -1,5 +1,5 @@
 import type { SessionRecord, TestRecord } from '../api';
-import { daySignals, formatDayLong, lastDays } from '../format';
+import { daySignals, formatLoggedAtLong, lastDays } from '../format';
 import { EvidenceCard, type EvidenceKind } from '../notes/EvidenceCard';
 import { signalColor } from '../../signal';
 
@@ -46,7 +46,7 @@ export function History({ sessions, tests, onNoteSaved }: Props) {
               <EvidenceCard
                 kind={entry.kind}
                 item={entry.item}
-                dateText={formatDayLong(entry.item.created_at)}
+                dateText={formatLoggedAtLong(entry.item.created_at)}
                 onNoteSaved={onNoteSaved}
               />
             </li>

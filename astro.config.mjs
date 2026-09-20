@@ -26,7 +26,24 @@ export default defineConfig({
   ],
   vite: {
     optimizeDeps: {
-      exclude: ['@astrojs/preact', '@astrojs/preact/client.js', '@astrojs/preact/server.js'],
+      exclude: [
+        '@astrojs/preact',
+        '@astrojs/preact/client.js',
+        '@astrojs/preact/server.js',
+        '@astrojs/cloudflare/entrypoints/server',
+        'temporal-polyfill',
+        'temporal-polyfill/global',
+        '@preact/signals',
+        '@schedule-x/calendar',
+        '@schedule-x/preact',
+        '@schedule-x/theme-default',
+        '@schedule-x/events-service',
+        '@schedule-x/event-modal',
+        '@schedule-x/current-time',
+      ],
+    },
+    ssr: {
+      external: ['@schedule-x/calendar', '@schedule-x/theme-default', '@schedule-x/events-service', '@schedule-x/event-modal', '@schedule-x/current-time'],
     },
   },
 });

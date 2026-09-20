@@ -25,6 +25,12 @@ export type StudentSummary = StudentRow & {
   testCount: number;
   averageSignal: number | null;
   lastStudied: string | null;
+  hasCalendar: boolean;
+};
+
+export type StudentCalendar = {
+  url: string | null;
+  ics: string | null;
 };
 
 export type TopicStat = {
@@ -118,6 +124,35 @@ export async function getStudent(id: string): Promise<StudentRow | null> {
     .prepare('SELECT id, display_name, created_at FROM students WHERE id = ?')
     .bind(id)
     .first<StudentRow>();
+}
+
+export async function getStudentCalendar(id: string): Promise<StudentCalendar | null> {
+  const row = await db()
+    .prepare('SELECT calendar_url, calendar_ics FROM students WHERE id = ?')
+    .bind(id)
+    .first<{ calendar_url: string | null; calendar_ics: string | null }>();
+  if (!row) return null;
+  return { url: row.calendar_url, ics: row.calendar_ics };
+}
+
+export async function setStudentCalendar(id: string, calendar: StudentCalendar): Promise<void> {
+  await db()
+    .prepare('UPDATE students SET calendar_url = ?, calendar_ics = ? WHERE id = ?')
+    .bind(calendar.url, calendar.ics, id)
+    .run();
+}
+
+async function calendarFlags(ids: string[]): Promise<Map<string, boolean>> {
+  if (ids.length === 0) return new Map();
+  const result = await db()
+    .prepare(
+      `SELECT id, calendar_url, calendar_ics FROM students WHERE id IN (${ids.map(() => '?').join(', ')})`,
+    )
+    .bind(...ids)
+    .all<{ id: string; calendar_url: string | null; calendar_ics: string | null }>();
+  return new Map(
+    result.results.map((row) => [row.id, Boolean(row.calendar_url || row.calendar_ics)]),
+  );
 }
 
 export async function createStudent(displayName: string): Promise<StudentRow> {
@@ -321,6 +356,7 @@ export async function studentSummaries(studentId?: string, studentIds?: string[]
       : await listStudents();
   const sessions = await listSessions({ studentId, studentIds: studentId ? undefined : studentIds });
   const tests = await listTests({ studentId, studentIds: studentId ? undefined : studentIds });
+  const flags = await calendarFlags(students.map((student) => student.id));
   return students.map((student) => {
     const practice = sessions.filter((session) => session.student_id === student.id);
     const papers = tests.filter((test) => test.student_id === student.id);
@@ -335,6 +371,7 @@ export async function studentSummaries(studentId?: string, studentIds?: string[]
       testCount: papers.length,
       averageSignal,
       lastStudied: combined[0]?.created_at ?? null,
+      hasCalendar: flags.get(student.id) ?? false,
     };
   });
 }

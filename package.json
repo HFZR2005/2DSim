@@ -18,9 +18,17 @@
     "@astrojs/cloudflare": "^14.3.2",
     "@astrojs/preact": "^6.0.5",
     "@astrojs/sitemap": "^3.7.4",
+    "@preact/signals": "^2.11.2",
+    "@schedule-x/calendar": "^4.8.0",
+    "@schedule-x/current-time": "^4.8.0",
+    "@schedule-x/event-modal": "^4.8.0",
+    "@schedule-x/events-service": "^4.8.0",
+    "@schedule-x/theme-default": "^4.8.0",
     "astro": "^7.3.1",
+    "ical.js": "^2.2.1",
     "marked": "^18.0.13",
     "preact": "^10.29.8",
+    "temporal-polyfill": "^0.3.0",
     "zod": "^4.6.5"
   },
   "allowScripts": {

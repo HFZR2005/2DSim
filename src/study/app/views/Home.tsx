@@ -1,18 +1,22 @@
-import type { SessionRecord, StudentSummary, TestRecord } from '../api';
-import { daySignals, formatDay, formatPercent, lastDays } from '../format';
+import type { CalendarFeed, SessionRecord, StudentSummary, TestRecord } from '../api';
+import { daySignals, formatLoggedAt, formatPercent, lastDays } from '../format';
 import { EvidenceCard, type EvidenceKind } from '../notes/EvidenceCard';
 import { signalColor } from '../../signal';
+import { Schedule } from './Schedule';
 
 type Props = {
   studentId: string | null;
   students: StudentSummary[];
   sessions: SessionRecord[];
   tests: TestRecord[];
+  calendar: CalendarFeed | null;
+  calendarLoading: boolean;
   canManage: boolean;
   pending: boolean;
   onLog: () => void;
   onSelectStudent: (id: string) => void;
   onNoteSaved: (kind: EvidenceKind, item: SessionRecord | TestRecord) => void;
+  onCalendarChanged: () => void;
 };
 
 type Recent =
@@ -24,11 +28,14 @@ export function Home({
   students,
   sessions,
   tests,
+  calendar,
+  calendarLoading,
   canManage,
   pending,
   onLog,
   onSelectStudent,
   onNoteSaved,
+  onCalendarChanged,
 }: Props) {
   if (!studentId) {
     return (
@@ -61,8 +68,9 @@ export function Home({
                     <span class="muted">Nothing logged yet</span>
                   )}
                   {student.lastStudied && (
-                    <span class="student-card-meta">Last {formatDay(student.lastStudied)}</span>
+                    <span class="student-card-meta">Last {formatLoggedAt(student.lastStudied)}</span>
                   )}
+                  {student.hasCalendar && <span class="student-card-meta">Timetable</span>}
                 </button>
               </li>
             ))}
@@ -102,6 +110,12 @@ export function Home({
           );
         })}
       </div>
+      <Schedule
+        studentId={studentId}
+        calendar={calendar}
+        loading={calendarLoading}
+        onChanged={onCalendarChanged}
+      />
       <h2>Recent</h2>
       {recent.length === 0 ? (
         <p class="empty">No practice or tests yet for this filter.</p>
@@ -112,7 +126,7 @@ export function Home({
               key={`${entry.kind}-${entry.item.id}`}
               kind={entry.kind}
               item={entry.item}
-              dateText={formatDay(entry.item.created_at)}
+              dateText={formatLoggedAt(entry.item.created_at)}
               onNoteSaved={onNoteSaved}
             />
           ))}

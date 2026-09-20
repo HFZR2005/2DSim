@@ -8,6 +8,24 @@ export type StudentSummary = {
   testCount: number;
   averageSignal: number | null;
   lastStudied: string | null;
+  hasCalendar: boolean;
+};
+
+export type CalendarEvent = {
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  location: string | null;
+};
+
+export type CalendarFeed = {
+  connected: boolean;
+  canEdit: boolean;
+  source: 'url' | 'file' | null;
+  feedUrl: string | null;
+  events: CalendarEvent[];
+  error: string | null;
 };
 
 export type SessionRecord = {
@@ -183,4 +201,36 @@ export function grantAccess(body: { email: string; kind: 'staff' | 'adult' | 'se
 
 export function logout() {
   return request<{ ok: boolean }>('/api/study/logout', { method: 'POST' });
+}
+
+export function fetchCalendar(studentId: string) {
+  return request<CalendarFeed>(`/api/study/students/${studentId}/calendar`);
+}
+
+export function saveCalendarUrl(studentId: string, url: string | null) {
+  return request<{ ok: boolean; source: 'url' | null }>(`/api/study/students/${studentId}/calendar`, {
+    method: 'PUT',
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function uploadCalendarIcs(studentId: string, file: File) {
+  const response = await fetch(`/api/study/students/${studentId}/calendar`, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    body: (() => {
+      const data = new FormData();
+      data.append('ics', file);
+      return data;
+    })(),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    window.location.assign('/login');
+    throw new Error('Sign in required');
+  }
+  if (!response.ok) {
+    throw new Error(body.error ?? 'Could not upload calendar');
+  }
+  return body as { ok: boolean; source: 'file' };
 }

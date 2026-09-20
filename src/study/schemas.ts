@@ -54,6 +54,12 @@ export const updateNoteSchema = z.object({
   note: z.string().max(NOTE_MAX),
 });
 
+export const ICS_MAX = 800_000;
+
+export const updateCalendarSchema = z.object({
+  url: z.string().trim().max(500).nullable(),
+});
+
 export const grantAccessSchema = z
   .object({
     email: z.email().max(160),

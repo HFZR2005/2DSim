@@ -21,18 +21,24 @@ export function shiftDay(key: string, delta: number): string {
   return `${y}-${m}-${d}`;
 }
 
-export function formatDay(iso: string): string {
+export function formatLoggedAt(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
   }).format(new Date(iso));
 }
 
-export function formatDayLong(iso: string): string {
+export function formatLoggedAtLong(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
   }).format(new Date(iso));
 }
 
@@ -79,4 +85,59 @@ export function lastDays(count: number): string[] {
     days.push(shiftDay(start, -i));
   }
   return days;
+}
+
+export function localDayKey(iso: string): string {
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function startOfWeek(key: string): string {
+  const [year, month, date] = key.split('-').map(Number);
+  const weekday = new Date(year, month - 1, date).getDay();
+  const back = weekday === 0 ? 6 : weekday - 1;
+  return shiftDay(key, -back);
+}
+
+export function lastWeeks(count: number): string[] {
+  const origin = startOfWeek(todayKey());
+  const weeks: string[] = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    weeks.push(shiftDay(origin, -i * 7));
+  }
+  return weeks;
+}
+
+export function formatWeek(key: string): string {
+  const [year, month, date] = key.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(year, month - 1, date));
+}
+
+export function daysSince(iso: string): number {
+  const last = new Date(`${localDayKey(iso)}T12:00:00`);
+  const today = new Date(`${todayKey()}T12:00:00`);
+  return Math.max(0, Math.round((today.getTime() - last.getTime()) / 86_400_000));
+}
+
+export function recencyKind(days: number): 'fresh' | 'fade' | 'cold' {
+  if (days <= 7) return 'fresh';
+  if (days <= 21) return 'fade';
+  return 'cold';
+}
+
+export function formatRecency(days: number): string {
+  if (days === 0) return 'Today';
+  if (days === 1) return '1 day';
+  return `${days} days`;
+}
+
+export function weekVisited(dates: string[], weeks: string[]): boolean[] {
+  const set = new Set(dates.map((iso) => startOfWeek(localDayKey(iso))));
+  return weeks.map((week) => set.has(week));
 }

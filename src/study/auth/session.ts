@@ -64,6 +64,17 @@ export function requireStudentAccess(locals: App.Locals, studentId: string): Vie
   return viewer;
 }
 
+export function requireStudentSelf(locals: App.Locals, studentId: string): Viewer {
+  const viewer = requireViewer(locals);
+  if (viewer.role !== 'student' || viewer.studentId !== studentId) {
+    throw new Response(JSON.stringify({ error: 'Only this student can add their timetable' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  return viewer;
+}
+
 export { visibleStudentIds };
 
 export async function attachViewer(context: APIContext): Promise<Viewer | null> {

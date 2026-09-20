@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
   createStudent,
   fetchAccess,
+  fetchCalendar,
   fetchMe,
   fetchSessions,
   fetchStudents,
@@ -10,6 +11,7 @@ import {
   grantAccess,
   logout,
   type AccessRecord,
+  type CalendarFeed,
   type SessionRecord,
   type StudentSummary,
   type SubjectStat,
@@ -56,6 +58,8 @@ export default function App() {
   const [allowKind, setAllowKind] = useState<'adult' | 'self'>('adult');
   const [accessRows, setAccessRows] = useState<AccessRecord[]>([]);
   const [viewer, setViewer] = useState<ViewerInfo | null>(null);
+  const [calendar, setCalendar] = useState<CalendarFeed | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [error, setError] = useState('');
 
   function syncUrl(next: { view?: View; studentId?: string | null; subject?: string | null }) {
@@ -107,6 +111,14 @@ export default function App() {
     if (nextStudent) {
       const topicData = await fetchTopics(nextStudent);
       setTopics(topicData.subjects);
+      setCalendarLoading(true);
+      try {
+        setCalendar(await fetchCalendar(nextStudent));
+      } catch {
+        setCalendar(null);
+      } finally {
+        setCalendarLoading(false);
+      }
       if (me.viewer.role === 'staff') {
         const accessData = await fetchAccess(nextStudent);
         setAccessRows(accessData.access);
@@ -116,6 +128,7 @@ export default function App() {
     } else {
       setTopics([]);
       setAccessRows([]);
+      setCalendar(null);
     }
   }
 
@@ -344,6 +357,21 @@ export default function App() {
             onLog={() => syncUrl({ view: 'log' })}
             onSelectStudent={(id) => syncUrl({ studentId: id, view: 'home' })}
             onNoteSaved={onNoteSaved}
+            calendar={calendar}
+            calendarLoading={calendarLoading}
+            onCalendarChanged={() => {
+              if (!studentId) return;
+              fetchCalendar(studentId)
+                .then((feed) => {
+                  setCalendar(feed);
+                  setStudents((rows) =>
+                    rows.map((row) =>
+                      row.id === studentId ? { ...row, hasCalendar: feed.connected } : row,
+                    ),
+                  );
+                })
+                .catch(() => setCalendar(null));
+            }}
           />
         )}
         {view === 'log' && (
@@ -358,7 +386,14 @@ export default function App() {
             }}
           />
         )}
-        {view === 'topics' && <Topics studentId={studentId} subjects={visibleTopics} />}
+        {view === 'topics' && (
+          <Topics
+            studentId={studentId}
+            subjects={visibleTopics}
+            sessions={visibleSessions}
+            tests={visibleTests}
+          />
+        )}
         {view === 'history' && (
           <History sessions={visibleSessions} tests={visibleTests} onNoteSaved={onNoteSaved} />
         )}
