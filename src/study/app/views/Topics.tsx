@@ -1,6 +1,9 @@
-import type { SessionRecord, SubjectStat, TestRecord } from '../api';
+import { useState } from 'preact/hooks';
+import { deleteSubject, type SessionRecord, type SubjectStat, type TestRecord } from '../api';
+import { ActionButton, useActionStatus } from '../ActionButton';
 import {
   daysSince,
+  formatLoggedAt,
   formatPercent,
   formatRecency,
   formatWeek,
@@ -15,6 +18,8 @@ type Props = {
   subjects: SubjectStat[];
   sessions: SessionRecord[];
   tests: TestRecord[];
+  canWrite?: boolean;
+  onSubjectDeleted: (subject: string) => void;
 };
 
 const TREND: Record<string, string> = {
@@ -65,10 +70,14 @@ function StatsTable({
             <td>{row.name}</td>
             <td>{row.count}</td>
             <td>
-              <span class="signal-inline">
-                <span class="signal-dot" style={{ background: signalColor(row.averageSignal) }} />
-                {formatPercent(row.averageSignal)}
-              </span>
+              {row.averageSignal === null ? (
+                <span class="muted">—</span>
+              ) : (
+                <span class="signal-inline">
+                  <span class="signal-dot" style={{ background: signalColor(row.averageSignal) }} />
+                  {formatPercent(row.averageSignal)}
+                </span>
+              )}
             </td>
             <td>{TREND[row.trend]}</td>
           </tr>
@@ -149,12 +158,71 @@ function RecencyGrid({
   );
 }
 
-export function Topics({ studentId, subjects, sessions, tests }: Props) {
+function SubjectDeleteButton({
+  studentId,
+  subject,
+  onDeleted,
+}: {
+  studentId: string;
+  subject: SubjectStat;
+  onDeleted: (subject: string) => void;
+}) {
+  const action = useActionStatus();
+  const [armed, setArmed] = useState(false);
+  const practiceCount = subject.topics.reduce((sum, topic) => sum + topic.count, 0);
+  const testCount = subject.tracks.reduce((sum, track) => sum + track.count, 0);
+  const parts = [
+    practiceCount ? `${practiceCount} topic ${practiceCount === 1 ? 'log' : 'logs'}` : null,
+    testCount ? `${testCount} paper${testCount === 1 ? '' : 's'}` : null,
+  ].filter(Boolean);
+  const summary = parts.length ? `${subject.subject} and its ${parts.join(' and ')}` : subject.subject;
+
+  async function remove() {
+    try {
+      await action.runAndHoldOk(() => deleteSubject(studentId, subject.subject));
+      onDeleted(subject.subject);
+    } catch {
+      return;
+    }
+  }
+
+  if (!armed) {
+    return (
+      <button type="button" class="text-btn danger" onClick={() => setArmed(true)}>
+        Delete subject
+      </button>
+    );
+  }
+
+  return (
+    <div class="subject-delete-confirm">
+      <p>This deletes {summary}. It cannot be undone.</p>
+      <div class="subject-delete-actions">
+        <button type="button" class="text-btn" disabled={action.busy} onClick={() => setArmed(false)}>
+          Cancel
+        </button>
+        <ActionButton
+          type="button"
+          class="text-btn danger"
+          status={action.status}
+          idle="Delete"
+          loading="Deleting"
+          ok="Deleted"
+          error="Couldn't delete"
+          onClick={() => void remove()}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function Topics({ studentId, subjects, sessions, tests, canWrite = true, onSubjectDeleted }: Props) {
+
   if (!studentId) {
     return (
       <section class="page">
-        <h1>Progress</h1>
-        <p class="empty">Select a student to see topics and tracks.</p>
+        <h1>Subjects</h1>
+        <p class="empty">Select a student to see subjects.</p>
       </section>
     );
   }
@@ -162,23 +230,41 @@ export function Topics({ studentId, subjects, sessions, tests }: Props) {
   if (subjects.length === 0) {
     return (
       <section class="page">
-        <h1>Progress</h1>
-        <p class="empty">No practice or tests yet for this student.</p>
+        <h1>Subjects</h1>
+        <p class="empty">No logs yet for this student.</p>
       </section>
     );
   }
 
   return (
     <section class="page">
-      <h1>Progress</h1>
-
-      <section class="progress-block">
-        <h2>Retrospective</h2>
-        {subjects.map((subject) => {
-          if (subject.topics.length === 0 && subject.tracks.length === 0) return null;
-          return (
-            <article key={`recency-${subject.subject}`} class="topic-card recency-card">
-              <h3>{subject.subject}</h3>
+      <h1>Subjects</h1>
+      {subjects.map((subject) => {
+        const practiceCount = subject.topics.reduce((sum, topic) => sum + topic.count, 0);
+        const testCount = subject.tracks.reduce((sum, track) => sum + track.count, 0);
+        const lastAt = [...subject.topics, ...subject.tracks]
+          .map((row) => row.lastStudied)
+          .sort((a, b) => b.localeCompare(a))[0];
+        return (
+          <article key={subject.subject} class="topic-card">
+            <header class="topic-card-head">
+              <div>
+                <h3>{subject.subject}</h3>
+                <p class="muted">
+                  {practiceCount} topic
+                  {' · '}
+                  {testCount} paper{testCount === 1 ? '' : 's'}
+                  {lastAt ? ` · Last ${formatLoggedAt(lastAt)}` : ''}
+                </p>
+              </div>
+              {subject.averageSignal !== null ? (
+                <span class="signal-badge" style={{ background: signalColor(subject.averageSignal) }}>
+                  {formatPercent(subject.averageSignal)}
+                </span>
+              ) : null}
+            </header>
+            <section class="progress-block">
+              <h2>Retrospective</h2>
               <RecencyGrid
                 label={`${subject.subject} topic recency`}
                 nameHeader="Topic"
@@ -186,44 +272,29 @@ export function Topics({ studentId, subjects, sessions, tests }: Props) {
                 datesFor={(name) => topicDates(sessions, subject.subject, name)}
               />
               <RecencyGrid
-                label={`${subject.subject} paper recency`}
-                nameHeader="Track"
+                label={`${subject.subject} series recency`}
+                nameHeader="Series"
                 items={subject.tracks}
                 datesFor={(name) => trackDates(tests, subject.subject, name)}
               />
-            </article>
-          );
-        })}
-      </section>
-
-      <section class="progress-block">
-        <h2>Results</h2>
-        {subjects.map((subject) => {
-          const practiceCount = subject.topics.reduce((sum, topic) => sum + topic.count, 0);
-          const testCount = subject.tracks.reduce((sum, track) => sum + track.count, 0);
-          return (
-            <article key={`results-${subject.subject}`} class="topic-card">
-              <header class="topic-card-head">
-                <div>
-                  <h3>{subject.subject}</h3>
-                  <p class="muted">
-                    {practiceCount} practice
-                    {' · '}
-                    {testCount} test{testCount === 1 ? '' : 's'}
-                  </p>
-                </div>
-                <span class="signal-badge" style={{ background: signalColor(subject.averageSignal) }}>
-                  {formatPercent(subject.averageSignal)}
-                </span>
-              </header>
+            </section>
+            <section class="progress-block">
+              <h2>Results</h2>
               <h4 class="section-label">Topics</h4>
-              <StatsTable rows={subject.topics} nameHeader="Topic" countHeader="Practice" />
-              <h4 class="section-label">Tracks</h4>
-              <StatsTable rows={subject.tracks} nameHeader="Track" countHeader="Tests" />
-            </article>
-          );
-        })}
-      </section>
+              <StatsTable rows={subject.topics} nameHeader="Topic" countHeader="Logs" />
+              <h4 class="section-label">Series</h4>
+              <StatsTable rows={subject.tracks} nameHeader="Series" countHeader="Papers" />
+            </section>
+            {canWrite && (
+              <SubjectDeleteButton
+                studentId={studentId}
+                subject={subject}
+                onDeleted={onSubjectDeleted}
+              />
+            )}
+          </article>
+        );
+      })}
     </section>
   );
 }

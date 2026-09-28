@@ -1,5 +1,5 @@
 import { withViewer } from '../../../../../study/auth/guard';
-import { requireStudentAccess } from '../../../../../study/auth/session';
+import { requireStudentWrite } from '../../../../../study/auth/session';
 import { createSession, getStudent } from '../../../../../study/db';
 import { json, readJson } from '../../../../../study/http';
 import { createSessionSchema } from '../../../../../study/schemas';
@@ -13,7 +13,7 @@ export async function POST(context: {
 }) {
   return withViewer(context, async () => {
     const studentId = context.params.id;
-    requireStudentAccess(context.locals, studentId);
+    requireStudentWrite(context.locals, studentId);
     if (!(await getStudent(studentId))) {
       return json({ error: 'Student not found' }, 404);
     }
@@ -28,6 +28,7 @@ export async function POST(context: {
       studentId,
       subject: parsed.data.subject,
       topic: parsed.data.topic,
+      type: parsed.data.type ?? 'Practice',
       score,
       confidence: score ? null : (parsed.data.confidence ?? null),
       note: parsed.data.note?.trim() ? parsed.data.note.trim() : null,

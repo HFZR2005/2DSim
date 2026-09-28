@@ -1,6 +1,14 @@
 import { useState } from 'preact/hooks';
-import { signalColor } from '../../signal';
-import { updateSessionNote, updateTestNote, type SessionRecord, type TestRecord } from '../api';
+import { signalColor, hasMeasuredSignal } from '../../signal';
+import {
+  deleteSession,
+  deleteTest,
+  updateSessionNote,
+  updateTestNote,
+  type SessionRecord,
+  type TestRecord,
+} from '../api';
+import { ActionButton, useActionStatus } from '../ActionButton';
 import { notePreview } from './markdown';
 import { NotePad } from './NotePad';
 
@@ -11,32 +19,48 @@ type Props = {
   item: SessionRecord | TestRecord;
   dateText: string;
   onNoteSaved: (kind: EvidenceKind, item: SessionRecord | TestRecord) => void;
+  onDeleted?: (kind: EvidenceKind, id: string) => void;
 };
 
-export function EvidenceCard({ kind, item, dateText, onNoteSaved }: Props) {
+export function EvidenceCard({ kind, item, dateText, onNoteSaved, onDeleted }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(item.note ?? '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const save = useActionStatus();
+  const removeAction = useActionStatus();
+  const busy = save.busy || removeAction.busy;
   const dirty = draft !== (item.note ?? '');
   const title =
     kind === 'practice'
-      ? `Practice · ${item.subject} · ${(item as SessionRecord).topic}`
-      : `Test · ${item.subject} · ${(item as TestRecord).track} · ${(item as TestRecord).title}`;
+      ? `${item.type} · ${item.subject} · ${(item as SessionRecord).topic}`
+      : `${item.type} · ${item.subject} · ${(item as TestRecord).track} · ${(item as TestRecord).title}`;
 
-  async function save() {
-    setSaving(true);
-    setError('');
+  async function saveNote() {
     try {
-      const next =
+      const next = await save.run(async () =>
         kind === 'practice'
           ? (await updateSessionNote(item.student_id, item.id, draft)).session
-          : (await updateTestNote(item.student_id, item.id, draft)).test;
+          : (await updateTestNote(item.student_id, item.id, draft)).test,
+      );
       onNoteSaved(kind, next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save note');
-    } finally {
-      setSaving(false);
+    } catch {
+      return;
+    }
+  }
+
+  async function remove() {
+    const label = item.type.toLowerCase();
+    if (!window.confirm(`Delete this ${label}? This cannot be undone.`)) return;
+    try {
+      await removeAction.runAndHoldOk(async () => {
+        if (kind === 'practice') {
+          await deleteSession(item.student_id, item.id);
+        } else {
+          await deleteTest(item.student_id, item.id);
+        }
+      });
+      onDeleted?.(kind, item.id);
+    } catch {
+      return;
     }
   }
 
@@ -53,13 +77,12 @@ export function EvidenceCard({ kind, item, dateText, onNoteSaved }: Props) {
           });
         }}
       >
-        <span class="signal-dot" style={{ background: signalColor(item.signal) }} aria-hidden="true" />
+        <span class="signal-dot" style={{ background: hasMeasuredSignal(item) ? signalColor(item.signal) : 'var(--study-line)' }} aria-hidden="true" />
         <span class="evidence-copy">
           <span class="session-title">{title}</span>
           <span class="session-meta">
             {dateText}
-            {' · '}
-            {item.score ?? item.confidence}
+            {item.score || item.confidence ? ` · ${item.score ?? item.confidence}` : ''}
             {item.note
               ? ` · ${notePreview(item.note)}`
               : open
@@ -75,9 +98,9 @@ export function EvidenceCard({ kind, item, dateText, onNoteSaved }: Props) {
         <div class="evidence-note">
           <div
             onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && dirty && !saving) {
+              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && dirty && !busy) {
                 event.preventDefault();
-                void save();
+                void saveNote();
               }
             }}
           >
@@ -89,12 +112,32 @@ export function EvidenceCard({ kind, item, dateText, onNoteSaved }: Props) {
               placeholder="What clicked, what stalled, what to try next."
             />
           </div>
+          {onDeleted && (
           <div class="evidence-actions">
-            {error && <p class="study-error">{error}</p>}
-            <button type="button" class="primary" disabled={saving || !dirty} onClick={save}>
-              {saving ? 'Saving' : dirty ? 'Save note' : 'Saved'}
-            </button>
+            <ActionButton
+              type="button"
+              class="text-btn danger"
+              status={removeAction.status}
+              idle="Delete"
+              loading="Deleting"
+              ok="Deleted"
+              error="Couldn't delete"
+              disabled={save.busy}
+              onClick={() => void remove()}
+            />
+            <ActionButton
+              type="button"
+              class="primary"
+              status={save.status}
+              idle={dirty ? 'Save note' : 'Saved'}
+              loading="Saving"
+              ok="Saved"
+              error="Couldn't save"
+              disabled={removeAction.busy || (!dirty && save.status === 'idle')}
+              onClick={() => void saveNote()}
+            />
           </div>
+          )}
         </div>
       )}
     </article>

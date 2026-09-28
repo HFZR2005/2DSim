@@ -1,4 +1,4 @@
-import { sessionSignal } from '../signal';
+import { sessionSignal, hasMeasuredSignal } from '../signal';
 
 export function dayKey(iso: string): string {
   return iso.slice(0, 10);
@@ -66,6 +66,7 @@ export function streakFromDates(keys: string[]): number {
 export function daySignals(sessions: { created_at: string; score?: string | null; confidence?: string | null; signal?: number }[]) {
   const map = new Map<string, number[]>();
   for (const session of sessions) {
+    if (!hasMeasuredSignal(session)) continue;
     const key = dayKey(session.created_at);
     const list = map.get(key) ?? [];
     list.push(session.signal ?? sessionSignal(session));
@@ -76,6 +77,10 @@ export function daySignals(sessions: { created_at: string; score?: string | null
     averages.set(key, values.reduce((sum, value) => sum + value, 0) / values.length);
   }
   return averages;
+}
+
+export function dayOccupied(items: { created_at: string }[]): Set<string> {
+  return new Set(items.map((item) => dayKey(item.created_at)));
 }
 
 export function lastDays(count: number): string[] {
@@ -109,6 +114,38 @@ export function lastWeeks(count: number): string[] {
     weeks.push(shiftDay(origin, -i * 7));
   }
   return weeks;
+}
+
+export function heatmapWeeks(weekCount: number): string[][] {
+  return lastWeeks(weekCount).map((monday) =>
+    Array.from({ length: 7 }, (_, day) => shiftDay(monday, day)),
+  );
+}
+
+export function formatMonthShort(key: string): string {
+  const [year, month, date] = key.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(
+    new Date(year, month - 1, date),
+  );
+}
+
+export function formatDayTitle(key: string): string {
+  const [year, month, date] = key.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, date));
+}
+
+export function heatmapMonthLabels(weeks: string[][]): string[] {
+  return weeks.map((week, index) => {
+    const firstOfMonth = week.find((day) => day.endsWith('-01'));
+    if (firstOfMonth) return formatMonthShort(firstOfMonth);
+    if (index === 0) return formatMonthShort(week[0]);
+    return '';
+  });
 }
 
 export function formatWeek(key: string): string {

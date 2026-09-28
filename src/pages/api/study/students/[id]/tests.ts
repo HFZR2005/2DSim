@@ -1,5 +1,5 @@
 import { withViewer } from '../../../../../study/auth/guard';
-import { requireStudentAccess } from '../../../../../study/auth/session';
+import { requireStudentWrite } from '../../../../../study/auth/session';
 import { createTest, getStudent } from '../../../../../study/db';
 import { json, readJson } from '../../../../../study/http';
 import { createTestSchema } from '../../../../../study/schemas';
@@ -13,7 +13,7 @@ export async function POST(context: {
 }) {
   return withViewer(context, async () => {
     const studentId = context.params.id;
-    requireStudentAccess(context.locals, studentId);
+    requireStudentWrite(context.locals, studentId);
     if (!(await getStudent(studentId))) {
       return json({ error: 'Student not found' }, 404);
     }
@@ -23,14 +23,15 @@ export async function POST(context: {
       return json({ error: parsed.error.issues[0]?.message ?? 'Invalid test' }, 400);
     }
 
-    const score = parsed.data.score?.trim() ? parsed.data.score.trim() : null;
+    const score = parsed.data.score.trim();
     const test = await createTest({
       studentId,
       subject: parsed.data.subject,
       track: parsed.data.track,
       title: parsed.data.title,
+      type: parsed.data.type ?? 'Test',
       score,
-      confidence: score ? null : (parsed.data.confidence ?? null),
+      confidence: null,
       note: parsed.data.note?.trim() ? parsed.data.note.trim() : null,
     });
     return json({ test }, 201);

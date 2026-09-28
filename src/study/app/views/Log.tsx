@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'preact/hooks';
 import { CONFIDENCE, type Confidence } from '../../signal';
+import { SUGGESTED_TYPES } from '../../taskType';
 import { createSession, createTest, type SessionRecord, type TestRecord } from '../api';
+import { ActionButton, useActionStatus } from '../ActionButton';
 import { NotePad } from '../notes/NotePad';
 
 type Kind = 'practice' | 'test';
@@ -10,7 +12,7 @@ type Props = {
   studentName?: string;
   sessions: SessionRecord[];
   tests: TestRecord[];
-  onSaved: () => void;
+  onSaved: (kind: Kind) => void | Promise<void>;
 };
 
 export function Log({ studentId, studentName, sessions, tests, onSaved }: Props) {
@@ -20,18 +22,20 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
     [sessions, tests],
   );
   const [kind, setKind] = useState<Kind>('practice');
+  const [taskType, setTaskType] = useState('Practice');
+  const [newType, setNewType] = useState('');
   const [subject, setSubject] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [newTopic, setNewTopic] = useState('');
-  const [track, setTrack] = useState('');
-  const [newTrack, setNewTrack] = useState('');
+  const [series, setSeries] = useState('');
+  const [newSeries, setNewSeries] = useState('');
   const [title, setTitle] = useState('');
   const [score, setScore] = useState('');
   const [confidence, setConfidence] = useState<Confidence | ''>('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+  const save = useActionStatus();
 
   const chosenSubject = subject || newSubject.trim();
   const topics = useMemo(
@@ -39,19 +43,24 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
       [...new Set(sessions.filter((row) => row.subject === chosenSubject).map((row) => row.topic))].sort(),
     [sessions, chosenSubject],
   );
-  const tracks = useMemo(
+  const seriesNames = useMemo(
     () => [...new Set(tests.filter((row) => row.subject === chosenSubject).map((row) => row.track))].sort(),
     [tests, chosenSubject],
   );
   const chosenTopic = topic || newTopic.trim();
-  const chosenTrack = track || newTrack.trim();
+  const chosenSeries = series || newSeries.trim();
+  const chosenType = newType.trim() || taskType;
   const hasScore = score.trim().length > 0;
+  const types = useMemo(() => {
+    const used = [...sessions.map((row) => row.type), ...tests.map((row) => row.type)];
+    return [...new Set([...SUGGESTED_TYPES, ...used])].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [sessions, tests]);
 
   if (!studentId) {
     return (
       <section class="page">
         <h1>Log</h1>
-        <p class="empty">Select a student first. Practice and tests are always attached to one person.</p>
+        <p class="empty">Select a student first. Logs are always attached to one person.</p>
       </section>
     );
   }
@@ -68,41 +77,49 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
       setError('Choose a topic, or type a new one.');
       return;
     }
-    if (kind === 'test' && (!chosenTrack || !title.trim())) {
-      setError('Choose a track and name the paper.');
+    if (kind === 'test' && (!chosenSeries || !title.trim())) {
+      setError('Choose a series and name the paper.');
       return;
     }
-    if (!hasScore && !confidence) {
-      setError('Add a score or pick a confidence rating.');
+    if (kind === 'test' && !hasScore) {
+      setError('Add a score.');
       return;
     }
-    setSaving(true);
+    if (!chosenType) {
+      setError('Choose a type, or type a new one.');
+      return;
+    }
     try {
-      const evidence = hasScore
-        ? { score: score.trim() }
-        : { confidence: confidence as Confidence };
-      const extra = note.trim() ? { note: note.trim() } : {};
-      if (kind === 'practice') {
-        await createSession(studentId, {
-          subject: chosenSubject,
-          topic: chosenTopic,
-          ...evidence,
-          ...extra,
-        });
-      } else {
-        await createTest(studentId, {
-          subject: chosenSubject,
-          track: chosenTrack,
-          title: title.trim(),
-          ...evidence,
-          ...extra,
-        });
-      }
-      onSaved();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save');
-    } finally {
-      setSaving(false);
+      await save.runAndHoldOk(async () => {
+        const evidence = hasScore
+          ? { score: score.trim() }
+          : confidence
+            ? { confidence: confidence as Confidence }
+            : {};
+        const extra = {
+          type: chosenType,
+          ...(note.trim() ? { note: note.trim() } : {}),
+        };
+        if (kind === 'practice') {
+          await createSession(studentId, {
+            subject: chosenSubject,
+            topic: chosenTopic,
+            ...evidence,
+            ...extra,
+          });
+        } else {
+          await createTest(studentId, {
+            subject: chosenSubject,
+            track: chosenSeries,
+            title: title.trim(),
+            score: score.trim(),
+            ...extra,
+          });
+        }
+      });
+      await onSaved(kind);
+    } catch {
+      return;
     }
   }
 
@@ -112,25 +129,33 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
       <p class="lede">For {studentName ?? 'this student'}.</p>
       <form class="log-form" onSubmit={onSubmit}>
         <fieldset>
-          <legend>Kind</legend>
+          <legend>Type</legend>
           <div class="chips">
-            <button
-              type="button"
-              class={kind === 'practice' ? 'chip is-active' : 'chip'}
-              aria-pressed={kind === 'practice'}
-              onClick={() => setKind('practice')}
-            >
-              Practice
-            </button>
-            <button
-              type="button"
-              class={kind === 'test' ? 'chip is-active' : 'chip'}
-              aria-pressed={kind === 'test'}
-              onClick={() => setKind('test')}
-            >
-              Test
-            </button>
+            {types.map((name) => (
+              <button
+                key={name}
+                type="button"
+                class={taskType === name && !newType.trim() ? 'chip is-active' : 'chip'}
+                aria-pressed={taskType === name && !newType.trim()}
+                onClick={() => {
+                  setTaskType(name);
+                  setNewType('');
+                }}
+              >
+                {name}
+              </button>
+            ))}
           </div>
+          <label>
+            New type
+            <input
+              value={newType}
+              onInput={(event) => {
+                setNewType(event.currentTarget.value);
+                setTaskType('');
+              }}
+            />
+          </label>
         </fieldset>
 
         <fieldset>
@@ -146,7 +171,7 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
                   setSubject(name);
                   setNewSubject('');
                   setTopic('');
-                  setTrack('');
+                  setSeries('');
                 }}
               >
                 {name}
@@ -161,10 +186,32 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
                 setNewSubject(event.currentTarget.value);
                 setSubject('');
                 setTopic('');
-                setTrack('');
+                setSeries('');
               }}
             />
           </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>About</legend>
+          <div class="chips">
+            <button
+              type="button"
+              class={kind === 'practice' ? 'chip is-active' : 'chip'}
+              aria-pressed={kind === 'practice'}
+              onClick={() => setKind('practice')}
+            >
+              Topic
+            </button>
+            <button
+              type="button"
+              class={kind === 'test' ? 'chip is-active' : 'chip'}
+              aria-pressed={kind === 'test'}
+              onClick={() => setKind('test')}
+            >
+              Paper
+            </button>
+          </div>
         </fieldset>
 
         {kind === 'practice' ? (
@@ -200,18 +247,18 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
         ) : (
           <>
             <fieldset>
-              <legend>Track</legend>
-              <p class="muted">A course or paper series, such as GCSE, A Level, or UKMT.</p>
+              <legend>Series</legend>
+              <p class="muted">A course or paper series, such as GCSE Maths, Core Pure Maths, or UKMT.</p>
               <div class="chips">
-                {tracks.map((name) => (
+                {seriesNames.map((name) => (
                   <button
                     key={name}
                     type="button"
-                    class={track === name ? 'chip is-active' : 'chip'}
-                    aria-pressed={track === name}
+                    class={series === name ? 'chip is-active' : 'chip'}
+                    aria-pressed={series === name}
                     onClick={() => {
-                      setTrack(name);
-                      setNewTrack('');
+                      setSeries(name);
+                      setNewSeries('');
                     }}
                   >
                     {name}
@@ -219,12 +266,12 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
                 ))}
               </div>
               <label>
-                New track
+                New series
                 <input
-                  value={newTrack}
+                  value={newSeries}
                   onInput={(event) => {
-                    setNewTrack(event.currentTarget.value);
-                    setTrack('');
+                    setNewSeries(event.currentTarget.value);
+                    setSeries('');
                   }}
                 />
               </label>
@@ -241,15 +288,16 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
         )}
 
         <label>
-          Score (optional)
+          {kind === 'practice' ? 'Score (optional)' : 'Score'}
           <input
             value={score}
             placeholder="8/10"
+            required={kind === 'test'}
             onInput={(event) => setScore(event.currentTarget.value)}
           />
         </label>
 
-        {!hasScore && (
+        {kind === 'practice' && !hasScore && (
           <fieldset>
             <legend>Confidence</legend>
             <div class="confidence-grid">
@@ -259,7 +307,7 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
                   type="button"
                   class={confidence === value ? 'confidence-card is-active' : 'confidence-card'}
                   aria-pressed={confidence === value}
-                  onClick={() => setConfidence(value)}
+                  onClick={() => setConfidence((current) => (current === value ? '' : value))}
                 >
                   {value}
                 </button>
@@ -279,9 +327,15 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
         </fieldset>
 
         {error && <p class="study-error">{error}</p>}
-        <button type="submit" class="primary" disabled={saving}>
-          {saving ? 'Saving' : 'Save'}
-        </button>
+        <ActionButton
+          type="submit"
+          class="primary"
+          status={save.status}
+          idle="Save"
+          loading="Saving"
+          ok="Saved"
+          error="Couldn't save"
+        />
       </form>
     </section>
   );

@@ -28,6 +28,12 @@ export function parseScoreFraction(score: string): number | null {
   return clamp01(numerator / denominator);
 }
 
+export function hasMeasuredSignal(input: { score?: string | null; confidence?: string | null }): boolean {
+  if (input.score?.trim() && parseScoreFraction(input.score) !== null) return true;
+  const confidence = input.confidence?.trim();
+  return Boolean(confidence && isConfidence(confidence));
+}
+
 export function sessionSignal(input: { score?: string | null; confidence?: string | null }): number {
   const score = input.score?.trim();
   if (score) {

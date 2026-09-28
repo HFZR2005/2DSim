@@ -8,9 +8,8 @@ import {
 } from '../../../../../study/auth/cookie';
 import { googleProfile, safeNextPath } from '../../../../../study/auth/google';
 import {
-  grantStaffAccess,
-  hasStaffAccess,
   linkAccessToUser,
+  linkSharesToUser,
   upsertGoogleUser,
 } from '../../../../../study/db';
 import { getAuthSecret } from '../../../../../study/env';
@@ -58,9 +57,7 @@ export async function GET({ request, url }: { request: Request; url: URL }) {
       googleSub: profile.sub,
     });
     await linkAccessToUser(user.email, user.id);
-    if (!(await hasStaffAccess())) {
-      await grantStaffAccess(user.email, user.id);
-    }
+    await linkSharesToUser(user.email, user.id);
 
     const headers = new Headers({ Location: next });
     headers.append('Set-Cookie', serializeStudyCookie(await createUserToken(secret, user.id), secure));

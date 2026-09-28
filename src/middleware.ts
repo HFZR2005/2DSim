@@ -1,7 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { isSignedStudyToken, parseCookie, STUDY_COOKIE } from './study/auth/cookie';
 
-const TRACKER_PAGES = new Set(['/', '/log', '/topics', '/history']);
+const TRACKER_PAGES = new Set(['/', '/log', '/topics', '/subjects', '/history', '/people']);
 
 function isProtectedPath(pathname: string): boolean {
   return TRACKER_PAGES.has(pathname) || pathname.startsWith('/api/study');

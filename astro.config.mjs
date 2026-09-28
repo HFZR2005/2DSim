@@ -20,7 +20,9 @@ export default defineConfig({
         !page.includes('/login') &&
         !page.includes('/log') &&
         !page.includes('/topics') &&
+        !page.includes('/subjects') &&
         !page.includes('/history') &&
+        !page.includes('/people') &&
         page !== 'https://mechanicslab.org/',
     }),
   ],

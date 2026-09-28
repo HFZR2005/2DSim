@@ -1,6 +1,6 @@
 import { withViewer } from '../../../../../../study/auth/guard';
-import { requireStudentAccess } from '../../../../../../study/auth/session';
-import { updateTestNote } from '../../../../../../study/db';
+import { requireStudentWrite } from '../../../../../../study/auth/session';
+import { deleteTest, updateTestNote } from '../../../../../../study/db';
 import { json, readJson } from '../../../../../../study/http';
 import { updateNoteSchema } from '../../../../../../study/schemas';
 
@@ -13,7 +13,7 @@ export async function PATCH(context: {
 }) {
   return withViewer(context, async () => {
     const studentId = context.params.id;
-    requireStudentAccess(context.locals, studentId);
+    requireStudentWrite(context.locals, studentId);
     const parsed = updateNoteSchema.safeParse(await readJson(context.request));
     if (!parsed.success) {
       return json({ error: parsed.error.issues[0]?.message ?? 'Invalid note' }, 400);
@@ -24,5 +24,20 @@ export async function PATCH(context: {
       return json({ error: 'Test not found' }, 404);
     }
     return json({ test });
+  });
+}
+
+export async function DELETE(context: {
+  locals: App.Locals;
+  params: { id: string; testId: string };
+}) {
+  return withViewer(context, async () => {
+    const studentId = context.params.id;
+    requireStudentWrite(context.locals, studentId);
+    const removed = await deleteTest(studentId, context.params.testId);
+    if (!removed) {
+      return json({ error: 'Test not found' }, 404);
+    }
+    return json({ ok: true });
   });
 }

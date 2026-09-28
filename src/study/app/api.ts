@@ -33,6 +33,7 @@ export type SessionRecord = {
   student_id: string;
   subject: string;
   topic: string;
+  type: string;
   score: string | null;
   confidence: string | null;
   note: string | null;
@@ -43,7 +44,7 @@ export type SessionRecord = {
 export type TopicStat = {
   name: string;
   count: number;
-  averageSignal: number;
+  averageSignal: number | null;
   trend: 'up' | 'down' | 'flat';
   lastStudied: string;
 };
@@ -51,7 +52,7 @@ export type TopicStat = {
 export type SubjectStat = {
   subject: string;
   count: number;
-  averageSignal: number;
+  averageSignal: number | null;
   topics: TopicStat[];
   tracks: TopicStat[];
 };
@@ -62,6 +63,7 @@ export type TestRecord = {
   subject: string;
   track: string;
   title: string;
+  type: string;
   score: string | null;
   confidence: string | null;
   note: string | null;
@@ -121,6 +123,7 @@ export function createSession(
   body: {
     subject: string;
     topic: string;
+    type?: string;
     score?: string;
     confidence?: Confidence;
     note?: string;
@@ -146,8 +149,8 @@ export function createTest(
     subject: string;
     track: string;
     title: string;
-    score?: string;
-    confidence?: Confidence;
+    type?: string;
+    score: string;
     note?: string;
   },
 ) {
@@ -171,10 +174,33 @@ export function updateTestNote(studentId: string, testId: string, note: string) 
   });
 }
 
+export function deleteSession(studentId: string, sessionId: string) {
+  return request<{ ok: boolean }>(`/api/study/students/${studentId}/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteTest(studentId: string, testId: string) {
+  return request<{ ok: boolean }>(`/api/study/students/${studentId}/tests/${testId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteSubject(studentId: string, subject: string) {
+  return request<{ ok: boolean; sessions: number; tests: number }>(
+    `/api/study/students/${studentId}/subjects`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({ subject }),
+    },
+  );
+}
+
 export type ViewerInfo =
   | { role: 'staff'; userId?: string }
-  | { role: 'adult'; userId: string; studentIds: string[] }
+  | { role: 'supervisor'; userId: string; studentId?: string; studentIds: string[]; writableIds: string[] }
   | { role: 'student'; userId: string; studentId: string }
+  | { role: 'viewer'; userId: string; studentIds: string[] }
   | { role: 'pending'; userId: string };
 
 export type AccessRecord = {
@@ -184,8 +210,94 @@ export type AccessRecord = {
   kind: 'staff' | 'adult' | 'self';
 };
 
+export type RosterMember = {
+  id: string;
+  display_name: string;
+};
+
+export type OwnedRoster = {
+  id: string;
+  name: string;
+  join_code: string;
+  owner_email: string;
+  members: RosterMember[];
+};
+
+export type JoinedRoster = {
+  id: string;
+  name: string;
+  owner_email: string;
+  members: RosterMember[];
+};
+
+export type ShareRecord = {
+  id: string;
+  student_id: string;
+  email: string;
+};
+
 export function fetchMe() {
   return request<{ viewer: ViewerInfo; email: string | null; displayName: string | null }>('/api/study/me');
+}
+
+export function chooseRole(role: 'learner' | 'supervisor') {
+  return request<{ ok: boolean }>('/api/study/me/role', {
+    method: 'POST',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export function fetchRosters() {
+  return request<{ owned: OwnedRoster[]; joined: JoinedRoster[] }>('/api/study/rosters');
+}
+
+export function createRoster(name: string) {
+  return request<{ roster: { id: string; name: string; join_code: string } }>('/api/study/rosters', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function joinRoster(code: string) {
+  return request<{ roster: { id: string; name: string } }>('/api/study/rosters/join', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export function deleteRoster(rosterId: string) {
+  return request<{ ok: boolean }>(`/api/study/rosters/${rosterId}`, { method: 'DELETE' });
+}
+
+export function addRosterMember(rosterId: string, email: string) {
+  return request<{ ok: boolean }>(`/api/study/rosters/${rosterId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function removeRosterMember(rosterId: string, studentId: string) {
+  return request<{ ok: boolean }>(`/api/study/rosters/${rosterId}/members`, {
+    method: 'DELETE',
+    body: JSON.stringify({ studentId }),
+  });
+}
+
+export function fetchShares(studentId: string) {
+  return request<{ shares: ShareRecord[] }>(`/api/study/students/${studentId}/shares`);
+}
+
+export function createShare(studentId: string, email: string) {
+  return request<{ share: ShareRecord }>(`/api/study/students/${studentId}/shares`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function deleteShare(studentId: string, shareId: string) {
+  return request<{ ok: boolean }>(`/api/study/students/${studentId}/shares/${shareId}`, {
+    method: 'DELETE',
+  });
 }
 
 export function fetchAccess(studentId: string) {

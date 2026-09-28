@@ -1,5 +1,4 @@
-import 'temporal-polyfill/global';
-import { Temporal } from 'temporal-polyfill';
+import '../ensureTemporal';
 import {
   createCalendar,
   createViewDay,
@@ -14,9 +13,11 @@ import { createCurrentTimePlugin } from '@schedule-x/current-time';
 import '@schedule-x/theme-default/dist/index.css';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { saveCalendarUrl, uploadCalendarIcs, type CalendarEvent, type CalendarFeed } from '../api';
+import { ActionButton, useActionStatus } from '../ActionButton';
 
 const TIMEZONE = 'Europe/London';
 const SMALL_CALENDAR_PX = 900;
+const Temporal = globalThis.Temporal;
 
 type Props = {
   studentId: string;
@@ -35,28 +36,36 @@ type SxEvent = {
 };
 
 function toSxEvents(events: CalendarEvent[]): SxEvent[] {
-  return events.map((event, index) => {
-    const id = `e${index}`;
-    if (event.allDay) {
-      const start = Temporal.Instant.from(event.start).toZonedDateTimeISO(TIMEZONE).toPlainDate();
-      let end = Temporal.Instant.from(event.end).toZonedDateTimeISO(TIMEZONE).toPlainDate().subtract({ days: 1 });
-      if (Temporal.PlainDate.compare(end, start) < 0) end = start;
-      return { id, title: event.title, start, end, location: event.location ?? undefined, calendarId: 'study' };
+  const next: SxEvent[] = [];
+  events.forEach((event, index) => {
+    try {
+      const id = `e${index}`;
+      if (event.allDay) {
+        const start = Temporal.Instant.from(event.start).toZonedDateTimeISO(TIMEZONE).toPlainDate();
+        let end = Temporal.Instant.from(event.end).toZonedDateTimeISO(TIMEZONE).toPlainDate().subtract({ days: 1 });
+        if (Temporal.PlainDate.compare(end, start) < 0) end = start;
+        next.push({ id, title: event.title, start, end, location: event.location ?? undefined, calendarId: 'study' });
+        return;
+      }
+      next.push({
+        id,
+        title: event.title,
+        start: Temporal.Instant.from(event.start).toZonedDateTimeISO(TIMEZONE),
+        end: Temporal.Instant.from(event.end).toZonedDateTimeISO(TIMEZONE),
+        location: event.location ?? undefined,
+        calendarId: 'study',
+      });
+    } catch {
+      return;
     }
-    return {
-      id,
-      title: event.title,
-      start: Temporal.Instant.from(event.start).toZonedDateTimeISO(TIMEZONE),
-      end: Temporal.Instant.from(event.end).toZonedDateTimeISO(TIMEZONE),
-      location: event.location ?? undefined,
-      calendarId: 'study',
-    };
   });
+  return next;
 }
 
-function isNarrow(el?: HTMLElement | null): boolean {
+function isCompact(el?: HTMLElement | null): boolean {
   const width = el?.clientWidth || window.innerWidth;
-  return width < SMALL_CALENDAR_PX;
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+  return coarse || width < SMALL_CALENDAR_PX;
 }
 
 function TimetableGrid({ events }: { events: CalendarEvent[] }) {
@@ -73,50 +82,65 @@ function TimetableGrid({ events }: { events: CalendarEvent[] }) {
     let dead = false;
     let app: { destroy: () => void } | null = null;
 
-    try {
-      const eventsService = createEventsServicePlugin();
-      service.current = eventsService;
-      const small = isNarrow(root);
-      app = createCalendar({
-        views: [
-          createViewWeek(),
-          createViewDay(),
-          createViewMonthGrid(),
-          createViewWeekAgenda(),
-          createViewMonthAgenda(),
-        ],
-        defaultView: small ? 'week-agenda' : 'week',
-        locale: 'en-GB',
-        timezone: TIMEZONE,
-        firstDayOfWeek: 1,
-        dayBoundaries: { start: '07:00', end: '21:00' },
-        weekOptions: { gridHeight: small ? 480 : 720 },
-        isResponsive: true,
-        callbacks: {
-          isCalendarSmall: ($app: { elements: { calendarWrapper?: HTMLElement | null } }) =>
-            isNarrow($app.elements.calendarWrapper ?? root),
-        },
-        calendars: {
-          study: {
-            colorName: 'study',
-            lightColors: {
-              main: '#3452ff',
-              container: '#dce2ff',
-              onContainer: '#1c2230',
+    function mount() {
+      if (dead || app || !host.current) return;
+      const el = host.current;
+      if (el.clientWidth < 8) return;
+
+      try {
+        const eventsService = createEventsServicePlugin();
+        service.current = eventsService;
+        const compact = isCompact(el);
+        const plugins = compact
+          ? [eventsService, createEventModalPlugin()]
+          : [eventsService, createEventModalPlugin(), createCurrentTimePlugin({ fullWeekWidth: true })];
+        app = createCalendar({
+          views: [
+            createViewWeek(),
+            createViewDay(),
+            createViewMonthGrid(),
+            createViewWeekAgenda(),
+            createViewMonthAgenda(),
+          ],
+          defaultView: compact ? 'week-agenda' : 'week',
+          locale: 'en-GB',
+          timezone: TIMEZONE,
+          firstDayOfWeek: 1,
+          dayBoundaries: { start: '07:00', end: '21:00' },
+          weekOptions: { gridHeight: compact ? 480 : 720 },
+          isResponsive: true,
+          callbacks: {
+            isCalendarSmall: ($app: { elements: { calendarWrapper?: HTMLElement | null } }) =>
+              isCompact($app.elements.calendarWrapper ?? el),
+          },
+          calendars: {
+            study: {
+              colorName: 'study',
+              lightColors: {
+                main: '#3452ff',
+                container: '#dce2ff',
+                onContainer: '#1c2230',
+              },
             },
           },
-        },
-        events: toSxEvents(eventsRef.current),
-        plugins: [eventsService, createEventModalPlugin(), createCurrentTimePlugin({ fullWeekWidth: true })],
-      });
-      app.render(root);
-      eventsService.set(toSxEvents(eventsRef.current));
-    } catch (err) {
-      if (!dead) setMountError(err instanceof Error ? err.message : 'Could not open the calendar');
+          events: toSxEvents(eventsRef.current),
+          plugins,
+        });
+        app.render(el);
+        eventsService.set(toSxEvents(eventsRef.current));
+        window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+      } catch (err) {
+        if (!dead) setMountError(err instanceof Error ? err.message : 'Could not open the calendar');
+      }
     }
+
+    mount();
+    const observer = new ResizeObserver(() => mount());
+    observer.observe(root);
 
     return () => {
       dead = true;
+      observer.disconnect();
       service.current = null;
       app?.destroy();
     };
@@ -137,49 +161,44 @@ function TimetableGrid({ events }: { events: CalendarEvent[] }) {
 export function Schedule({ studentId, calendar, loading, onChanged }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const saveLink = useActionStatus();
+  const uploadFile = useActionStatus();
+  const removeCal = useActionStatus();
 
   async function saveUrl(event: Event) {
     event.preventDefault();
     if (!url.trim()) return;
-    setSaving(true);
-    setError('');
     try {
-      await saveCalendarUrl(studentId, url.trim());
-      setUrl('');
-      onChanged();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save calendar');
-    } finally {
-      setSaving(false);
+      await saveLink.run(async () => {
+        await saveCalendarUrl(studentId, url.trim());
+        setUrl('');
+        onChanged();
+      });
+    } catch {
+      return;
     }
   }
 
   async function saveFile(file: File) {
-    setSaving(true);
-    setError('');
     try {
-      await uploadCalendarIcs(studentId, file);
-      onChanged();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload calendar');
-    } finally {
-      setSaving(false);
+      await uploadFile.run(async () => {
+        await uploadCalendarIcs(studentId, file);
+        onChanged();
+      });
+    } catch {
+      return;
     }
   }
 
   async function remove() {
-    setSaving(true);
-    setError('');
     try {
-      await saveCalendarUrl(studentId, null);
-      setUrl('');
+      await removeCal.runAndHoldOk(async () => {
+        await saveCalendarUrl(studentId, null);
+        setUrl('');
+      });
       onChanged();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove calendar');
-    } finally {
-      setSaving(false);
+    } catch {
+      return;
     }
   }
 
@@ -190,15 +209,22 @@ export function Schedule({ studentId, calendar, loading, onChanged }: Props) {
       <div class="page-head">
         <h2>Timetable</h2>
         {calendar?.canEdit && calendar.connected && (
-          <button type="button" class="text-btn inline-text" disabled={saving} onClick={remove}>
-            Remove
-          </button>
+          <ActionButton
+            type="button"
+            class="text-btn inline-text"
+            status={removeCal.status}
+            idle="Remove"
+            loading="Removing"
+            ok="Removed"
+            error="Couldn't remove"
+            disabled={saveLink.busy || uploadFile.busy}
+            onClick={() => void remove()}
+          />
         )}
       </div>
 
       {loading && <p class="muted">Loading timetable…</p>}
       {calendar?.error && <p class="study-error">{calendar.error}</p>}
-      {error && <p class="study-error">{error}</p>}
 
       {!loading && calendar && !calendar.connected && (
         <p class="empty">
@@ -225,12 +251,26 @@ export function Schedule({ studentId, calendar, loading, onChanged }: Props) {
             />
           </label>
           <div class="timetable-actions">
-            <button type="submit" class="primary" disabled={saving || !url.trim()}>
-              {saving ? 'Saving' : 'Save link'}
-            </button>
-            <button type="button" disabled={saving} onClick={() => fileInput.current?.click()}>
-              Upload .ics
-            </button>
+            <ActionButton
+              type="submit"
+              class="primary"
+              status={saveLink.status}
+              idle="Save link"
+              loading="Saving"
+              ok="Saved"
+              error="Couldn't save"
+              disabled={uploadFile.busy || removeCal.busy || (!url.trim() && saveLink.status === 'idle')}
+            />
+            <ActionButton
+              type="button"
+              status={uploadFile.status}
+              idle="Upload .ics"
+              loading="Uploading"
+              ok="Uploaded"
+              error="Couldn't upload"
+              disabled={saveLink.busy || removeCal.busy}
+              onClick={() => fileInput.current?.click()}
+            />
             <input
               ref={fileInput}
               class="file-input"
