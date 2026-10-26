@@ -44,7 +44,7 @@ export async function GET({ request, url }: { request: Request; url: URL }) {
       return fail('AUTH_SECRET is not configured');
     }
 
-    let profile: { email: string; name: string; sub: string };
+    let profile: { email: string; name: string; sub: string; picture: string | null };
     try {
       profile = await googleProfile(url.origin, code);
     } catch (error) {
@@ -55,6 +55,7 @@ export async function GET({ request, url }: { request: Request; url: URL }) {
       email: profile.email,
       displayName: profile.name,
       googleSub: profile.sub,
+      picture: profile.picture,
     });
     await linkAccessToUser(user.email, user.id);
     await linkSharesToUser(user.email, user.id);

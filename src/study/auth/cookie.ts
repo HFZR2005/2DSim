@@ -1,7 +1,6 @@
 export const STUDY_COOKIE = 'study_auth';
 export const OAUTH_STATE_COOKIE = 'study_oauth';
 export const OAUTH_NEXT_COOKIE = 'study_oauth_next';
-const PIN_PREFIX = 'v1.';
 const USER_PREFIX = 'v2.';
 
 async function hmacHex(secret: string, message: string): Promise<string> {
@@ -26,16 +25,6 @@ function timingSafeEqual(left: string, right: string): boolean {
   return diff === 0;
 }
 
-export async function createStaffToken(pin: string): Promise<string> {
-  return `${PIN_PREFIX}${await hmacHex(pin, 'staff')}`;
-}
-
-export async function tokenIsStaff(pin: string, token: string | undefined): Promise<boolean> {
-  if (!token?.startsWith(PIN_PREFIX)) return false;
-  const expected = await createStaffToken(pin);
-  return timingSafeEqual(token, expected);
-}
-
 export async function createUserToken(secret: string, userId: string): Promise<string> {
   return `${USER_PREFIX}${userId}.${await hmacHex(secret, `v2:${userId}`)}`;
 }
@@ -52,7 +41,7 @@ export async function userIdFromToken(secret: string, token: string | undefined)
 }
 
 export function isSignedStudyToken(token: string | undefined): boolean {
-  return Boolean(token?.startsWith(PIN_PREFIX) || token?.startsWith(USER_PREFIX));
+  return Boolean(token?.startsWith(USER_PREFIX));
 }
 
 export function parseCookie(header: string | null, name: string): string | undefined {

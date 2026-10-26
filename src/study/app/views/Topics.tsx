@@ -11,6 +11,7 @@ import {
   recencyKind,
   weekVisited,
 } from '../format';
+import { paperPoints, ProgressChart, Sparkline, topicPoints, type ProgressPoint } from '../ProgressChart';
 import { signalColor } from '../../signal';
 
 type Props = {
@@ -20,12 +21,6 @@ type Props = {
   tests: TestRecord[];
   canWrite?: boolean;
   onSubjectDeleted: (subject: string) => void;
-};
-
-const TREND: Record<string, string> = {
-  up: 'Up',
-  down: 'Down',
-  flat: 'Flat',
 };
 
 const WEEK_COUNT = 8;
@@ -46,10 +41,12 @@ function StatsTable({
   rows,
   nameHeader,
   countHeader,
+  pointsFor,
 }: {
   rows: SubjectStat['topics'];
   nameHeader: string;
   countHeader: string;
+  pointsFor: (name: string) => ProgressPoint[];
 }) {
   if (rows.length === 0) {
     return <p class="empty">None yet.</p>;
@@ -61,7 +58,7 @@ function StatsTable({
           <th>{nameHeader}</th>
           <th>{countHeader}</th>
           <th>Average</th>
-          <th>Trend</th>
+          <th class="progress-col">Progress</th>
         </tr>
       </thead>
       <tbody>
@@ -79,7 +76,9 @@ function StatsTable({
                 </span>
               )}
             </td>
-            <td>{TREND[row.trend]}</td>
+            <td class="progress-col">
+              <Sparkline points={pointsFor(row.name)} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -222,7 +221,7 @@ export function Topics({ studentId, subjects, sessions, tests, canWrite = true, 
     return (
       <section class="page">
         <h1>Subjects</h1>
-        <p class="empty">Select a student to see subjects.</p>
+        <p class="empty">Open a student from Home to see their subjects.</p>
       </section>
     );
   }
@@ -251,9 +250,9 @@ export function Topics({ studentId, subjects, sessions, tests, canWrite = true, 
               <div>
                 <h3>{subject.subject}</h3>
                 <p class="muted">
-                  {practiceCount} topic
+                  {practiceCount} {practiceCount === 1 ? 'topic' : 'topics'}
                   {' · '}
-                  {testCount} paper{testCount === 1 ? '' : 's'}
+                  {testCount} {testCount === 1 ? 'paper' : 'papers'}
                   {lastAt ? ` · Last ${formatLoggedAt(lastAt)}` : ''}
                 </p>
               </div>
@@ -280,10 +279,23 @@ export function Topics({ studentId, subjects, sessions, tests, canWrite = true, 
             </section>
             <section class="progress-block">
               <h2>Results</h2>
+              <ProgressChart
+                points={[...topicPoints(sessions, subject.subject), ...paperPoints(tests, subject.subject)]}
+              />
               <h4 class="section-label">Topics</h4>
-              <StatsTable rows={subject.topics} nameHeader="Topic" countHeader="Logs" />
+              <StatsTable
+                rows={subject.topics}
+                nameHeader="Topic"
+                countHeader="Logs"
+                pointsFor={(name) => topicPoints(sessions, subject.subject, name)}
+              />
               <h4 class="section-label">Series</h4>
-              <StatsTable rows={subject.tracks} nameHeader="Series" countHeader="Papers" />
+              <StatsTable
+                rows={subject.tracks}
+                nameHeader="Series"
+                countHeader="Papers"
+                pointsFor={(name) => paperPoints(tests, subject.subject, name)}
+              />
             </section>
             {canWrite && (
               <SubjectDeleteButton

@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers';
 
 export type StudyBindings = {
   DB: D1Database;
-  STUDY_PIN: string;
+  NOTES: R2Bucket;
   AUTH_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
@@ -16,20 +16,20 @@ export function getBindings(): StudyBindings {
   return bindings;
 }
 
-export function getStudyPin(): string {
-  const pin = (env as unknown as StudyBindings).STUDY_PIN;
-  if (!pin) {
-    throw new Error('STUDY_PIN is not configured');
-  }
-  return pin;
-}
-
 export function getAuthSecret(): string {
   const secret = (env as unknown as StudyBindings).AUTH_SECRET;
   if (!secret) {
     throw new Error('AUTH_SECRET is not configured');
   }
   return secret;
+}
+
+export function getNotesBucket(): R2Bucket {
+  const bucket = (env as unknown as StudyBindings).NOTES;
+  if (!bucket) {
+    throw new Error('R2 binding NOTES is not configured');
+  }
+  return bucket;
 }
 
 export function getGoogleOAuth(): { clientId: string; clientSecret: string } | null {

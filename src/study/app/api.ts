@@ -9,6 +9,7 @@ export type StudentSummary = {
   averageSignal: number | null;
   lastStudied: string | null;
   hasCalendar: boolean;
+  picture: string | null;
 };
 
 export type CalendarEvent = {
@@ -95,13 +96,6 @@ export function fetchStudents() {
   return request<{ students: StudentSummary[] }>('/api/study/students');
 }
 
-export function createStudent(displayName: string) {
-  return request<{ student: { id: string; display_name: string } }>('/api/study/students', {
-    method: 'POST',
-    body: JSON.stringify({ displayName }),
-  });
-}
-
 export function fetchSessions(studentId?: string, subject?: string) {
   const params = new URLSearchParams();
   if (studentId) params.set('student', studentId);
@@ -186,6 +180,24 @@ export function deleteTest(studentId: string, testId: string) {
   });
 }
 
+export async function uploadNoteImage(studentId: string, blob: Blob): Promise<{ id: string }> {
+  const response = await fetch(`/api/study/students/${studentId}/notes/images`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': blob.type || 'image/jpeg' },
+    body: blob,
+  });
+  const body = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    window.location.assign('/login');
+    throw new Error('Sign in required');
+  }
+  if (!response.ok) {
+    throw new Error(body.error ?? 'Could not upload image');
+  }
+  return body as { id: string };
+}
+
 export function deleteSubject(studentId: string, subject: string) {
   return request<{ ok: boolean; sessions: number; tests: number }>(
     `/api/study/students/${studentId}/subjects`,
@@ -197,22 +209,16 @@ export function deleteSubject(studentId: string, subject: string) {
 }
 
 export type ViewerInfo =
-  | { role: 'staff'; userId?: string }
+  | { role: 'staff'; userId: string }
   | { role: 'supervisor'; userId: string; studentId?: string; studentIds: string[]; writableIds: string[] }
   | { role: 'student'; userId: string; studentId: string }
   | { role: 'viewer'; userId: string; studentIds: string[] }
   | { role: 'pending'; userId: string };
 
-export type AccessRecord = {
-  id: string;
-  email: string;
-  student_id: string | null;
-  kind: 'staff' | 'adult' | 'self';
-};
-
 export type RosterMember = {
   id: string;
   display_name: string;
+  picture: string | null;
 };
 
 export type OwnedRoster = {
@@ -237,7 +243,9 @@ export type ShareRecord = {
 };
 
 export function fetchMe() {
-  return request<{ viewer: ViewerInfo; email: string | null; displayName: string | null }>('/api/study/me');
+  return request<{ viewer: ViewerInfo; email: string | null; displayName: string | null; picture: string | null }>(
+    '/api/study/me',
+  );
 }
 
 export function chooseRole(role: 'learner' | 'supervisor') {
@@ -300,17 +308,6 @@ export function deleteShare(studentId: string, shareId: string) {
   });
 }
 
-export function fetchAccess(studentId: string) {
-  return request<{ access: AccessRecord[] }>(`/api/study/access?student=${encodeURIComponent(studentId)}`);
-}
-
-export function grantAccess(body: { email: string; kind: 'staff' | 'adult' | 'self'; studentId?: string }) {
-  return request<{ access: AccessRecord }>('/api/study/access', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
 export function logout() {
   return request<{ ok: boolean }>('/api/study/logout', { method: 'POST' });
 }
@@ -324,6 +321,88 @@ export function saveCalendarUrl(studentId: string, url: string | null) {
     method: 'PUT',
     body: JSON.stringify({ url }),
   });
+}
+
+export const APPLICATION_STAGES = [
+  'considering',
+  'applied',
+  'online_test',
+  'interview',
+  'final',
+  'offer',
+  'rejected',
+  'withdrawn',
+] as const;
+export type ApplicationStage = (typeof APPLICATION_STAGES)[number];
+
+export const APPLICATION_EVENT_TYPES = ['deadline', 'test_window', 'interview', 'other'] as const;
+export type ApplicationEventType = (typeof APPLICATION_EVENT_TYPES)[number];
+
+export type ApplicationEvent = {
+  type: ApplicationEventType;
+  at: string;
+  ends_at?: string;
+  label?: string;
+};
+
+export type ApplicationRecord = {
+  id: string;
+  student_id: string;
+  company: string;
+  role: string;
+  stage: ApplicationStage;
+  next_event: ApplicationEvent | null;
+  url: string | null;
+  notes: string;
+  history: { at: string; stage: ApplicationStage; note: string }[];
+  created_at: string;
+  updated_at: string;
+};
+
+export function fetchApplications(studentId: string, includeClosed = false) {
+  const params = new URLSearchParams();
+  if (includeClosed) params.set('include_closed', '1');
+  const query = params.toString();
+  return request<{ applications: ApplicationRecord[] }>(
+    `/api/study/students/${studentId}/applications${query ? `?${query}` : ''}`,
+  );
+}
+
+export function createApplication(
+  studentId: string,
+  body: {
+    company: string;
+    role: string;
+    stage?: ApplicationStage;
+    next_event?: ApplicationEvent | null;
+    url?: string | null;
+    notes?: string;
+  },
+) {
+  return request<{ application: ApplicationRecord }>(`/api/study/students/${studentId}/applications`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateApplication(
+  studentId: string,
+  applicationId: string,
+  body: {
+    stage?: ApplicationStage;
+    next_event?: ApplicationEvent | null;
+    url?: string | null;
+    notes?: string;
+    append_note?: string;
+  },
+) {
+  return request<{ application: ApplicationRecord }>(
+    `/api/study/students/${studentId}/applications/${applicationId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export async function uploadCalendarIcs(studentId: string, file: File) {

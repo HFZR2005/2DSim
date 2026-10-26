@@ -8,6 +8,10 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   site: 'https://mechanicslab.org',
   output: 'server',
+  security: {
+    // Claude's token POST is server-to-server and has no matching Origin.
+    checkOrigin: false,
+  },
   adapter: cloudflare({
     imageService: 'passthrough',
   }),

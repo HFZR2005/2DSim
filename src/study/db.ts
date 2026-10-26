@@ -1,5 +1,6 @@
 import { getBindings } from './env';
 import { randomJoinCode } from './joinCode';
+import { normalizePictureUrl } from './picture';
 import { sessionSignal, hasMeasuredSignal, trendFromSignals, type Confidence } from './signal';
 import { normalizeType } from './taskType';
 
@@ -29,6 +30,7 @@ export type StudentSummary = StudentRow & {
   averageSignal: number | null;
   lastStudied: string | null;
   hasCalendar: boolean;
+  picture: string | null;
 };
 
 export type StudentCalendar = {
@@ -74,6 +76,7 @@ export type UserRow = {
   email: string;
   display_name: string;
   google_sub: string;
+  picture: string | null;
   created_at: string;
 };
 
@@ -101,6 +104,8 @@ function withSignal(row: SessionRow): SessionRecord {
 function withTestSignal(row: TestRow): TestRecord {
   return { ...row, signal: sessionSignal(row) };
 }
+
+const USER_COLUMNS = 'id, email, display_name, google_sub, picture, created_at';
 
 function namedStats(
   name: string,
@@ -191,7 +196,8 @@ export async function listSessions(filters: {
     clauses.push('subject = ?');
     values.push(filters.subject);
   }
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  clauses.push('deleted_at IS NULL');
+  const where = `WHERE ${clauses.join(' AND ')}`;
   const result = await db()
     .prepare(
       `SELECT id, student_id, subject, topic, type, score, confidence, note, created_at
@@ -245,7 +251,7 @@ export async function getSession(studentId: string, sessionId: string): Promise<
   const row = await db()
     .prepare(
       `SELECT id, student_id, subject, topic, type, score, confidence, note, created_at
-       FROM sessions WHERE id = ? AND student_id = ?`,
+       FROM sessions WHERE id = ? AND student_id = ? AND deleted_at IS NULL`,
     )
     .bind(sessionId, studentId)
     .first<SessionRow>();
@@ -291,7 +297,8 @@ export async function listTests(filters: {
     clauses.push('subject = ?');
     values.push(filters.subject);
   }
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  clauses.push('deleted_at IS NULL');
+  const where = `WHERE ${clauses.join(' AND ')}`;
   const result = await db()
     .prepare(
       `SELECT id, student_id, subject, track, title, type, score, confidence, note, created_at
@@ -347,7 +354,7 @@ export async function getTest(studentId: string, testId: string): Promise<TestRe
   const row = await db()
     .prepare(
       `SELECT id, student_id, subject, track, title, type, score, confidence, note, created_at
-       FROM tests WHERE id = ? AND student_id = ?`,
+       FROM tests WHERE id = ? AND student_id = ? AND deleted_at IS NULL`,
     )
     .bind(testId, studentId)
     .first<TestRow>();
@@ -401,6 +408,7 @@ export async function studentSummaries(studentId?: string, studentIds?: string[]
   const sessions = await listSessions({ studentId, studentIds: studentId ? undefined : studentIds });
   const tests = await listTests({ studentId, studentIds: studentId ? undefined : studentIds });
   const flags = await calendarFlags(students.map((student) => student.id));
+  const pictures = await picturesForStudents(students.map((student) => student.id));
   return students.map((student) => {
     const practice = sessions.filter((session) => session.student_id === student.id);
     const papers = tests.filter((test) => test.student_id === student.id);
@@ -417,8 +425,24 @@ export async function studentSummaries(studentId?: string, studentIds?: string[]
       averageSignal,
       lastStudied: combined[0]?.created_at ?? null,
       hasCalendar: flags.get(student.id) ?? false,
+      picture: pictures.get(student.id) ?? null,
     };
   });
+}
+
+async function picturesForStudents(studentIds: string[]): Promise<Map<string, string>> {
+  if (studentIds.length === 0) return new Map();
+  const placeholders = studentIds.map(() => '?').join(',');
+  const result = await db()
+    .prepare(
+      `SELECT ua.student_id AS id, u.picture
+       FROM user_access ua
+       JOIN users u ON u.id = ua.user_id
+       WHERE ua.kind = 'self' AND ua.student_id IN (${placeholders}) AND u.picture IS NOT NULL`,
+    )
+    .bind(...studentIds)
+    .all<{ id: string; picture: string }>();
+  return new Map(result.results.map((row) => [row.id, row.picture]));
 }
 
 export async function subjectOverview(studentId: string, subject?: string): Promise<SubjectStat[]> {
@@ -465,21 +489,21 @@ export async function subjectOverview(studentId: string, subject?: string): Prom
 
 export async function getUser(id: string): Promise<UserRow | null> {
   return db()
-    .prepare('SELECT id, email, display_name, google_sub, created_at FROM users WHERE id = ?')
+    .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`)
     .bind(id)
     .first<UserRow>();
 }
 
 export async function getUserByGoogleSub(googleSub: string): Promise<UserRow | null> {
   return db()
-    .prepare('SELECT id, email, display_name, google_sub, created_at FROM users WHERE google_sub = ?')
+    .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE google_sub = ?`)
     .bind(googleSub)
     .first<UserRow>();
 }
 
 export async function getUserByEmail(email: string): Promise<UserRow | null> {
   return db()
-    .prepare('SELECT id, email, display_name, google_sub, created_at FROM users WHERE email = ?')
+    .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`)
     .bind(normalizeEmail(email))
     .first<UserRow>();
 }
@@ -488,13 +512,15 @@ export async function upsertGoogleUser(input: {
   email: string;
   displayName: string;
   googleSub: string;
+  picture?: string | null;
 }): Promise<UserRow> {
   const email = normalizeEmail(input.email);
+  const picture = normalizePictureUrl(input.picture);
   const existing = (await getUserByGoogleSub(input.googleSub)) ?? (await getUserByEmail(email));
   if (existing) {
     await db()
-      .prepare('UPDATE users SET email = ?, display_name = ?, google_sub = ? WHERE id = ?')
-      .bind(email, input.displayName, input.googleSub, existing.id)
+      .prepare('UPDATE users SET email = ?, display_name = ?, google_sub = ?, picture = ? WHERE id = ?')
+      .bind(email, input.displayName, input.googleSub, picture, existing.id)
       .run();
     const row = await getUser(existing.id);
     if (!row) throw new Error('User update failed');
@@ -503,8 +529,8 @@ export async function upsertGoogleUser(input: {
 
   const id = crypto.randomUUID();
   await db()
-    .prepare('INSERT INTO users (id, email, display_name, google_sub) VALUES (?, ?, ?, ?)')
-    .bind(id, email, input.displayName, input.googleSub)
+    .prepare('INSERT INTO users (id, email, display_name, google_sub, picture) VALUES (?, ?, ?, ?, ?)')
+    .bind(id, email, input.displayName, input.googleSub, picture)
     .run();
   const row = await getUser(id);
   if (!row) throw new Error('User insert failed');
@@ -531,30 +557,6 @@ export async function listAccessForEmail(email: string): Promise<AccessRow[]> {
     .bind(normalizeEmail(email))
     .all<AccessRow>();
   return result.results;
-}
-
-export async function listAccessForStudent(studentId: string): Promise<AccessRow[]> {
-  const result = await db()
-    .prepare(
-      `SELECT id, user_id, email, student_id, kind, created_at
-       FROM user_access WHERE student_id = ?
-       ORDER BY email COLLATE NOCASE`,
-    )
-    .bind(studentId)
-    .all<AccessRow>();
-  return result.results;
-}
-
-export async function hasStaffAccess(): Promise<boolean> {
-  const row = await db()
-    .prepare('SELECT id FROM user_access WHERE kind = ? LIMIT 1')
-    .bind('staff')
-    .first<{ id: string }>();
-  return Boolean(row);
-}
-
-export async function grantStaffAccess(email: string, userId?: string): Promise<AccessRow> {
-  return grantAccess({ email, kind: 'staff', userId });
 }
 
 export async function grantAccess(input: {
@@ -639,6 +641,7 @@ export type RosterRecord = {
 export type RosterMember = {
   id: string;
   display_name: string;
+  picture: string | null;
 };
 
 export type RosterWithMembers = RosterRecord & {
@@ -744,7 +747,12 @@ async function attachRosterMembers(
 export async function listRosterMembers(rosterId: string): Promise<RosterMember[]> {
   const result = await db()
     .prepare(
-      `SELECT s.id, s.display_name
+      `SELECT s.id, s.display_name,
+              (SELECT u.picture
+               FROM user_access ua
+               JOIN users u ON u.id = ua.user_id
+               WHERE ua.student_id = s.id AND ua.kind = 'self' AND u.picture IS NOT NULL
+               LIMIT 1) AS picture
        FROM roster_members m
        JOIN students s ON s.id = m.student_id
        WHERE m.roster_id = ?
@@ -923,4 +931,34 @@ export async function linkSharesToUser(email: string, userId: string): Promise<v
     .prepare('UPDATE student_shares SET user_id = ? WHERE email = ?')
     .bind(userId, normalizeEmail(email))
     .run();
+}
+
+export type NoteImageRow = {
+  id: string;
+  student_id: string;
+  mime: string;
+  bytes: number;
+  created_at: string;
+};
+
+export async function createNoteImage(input: {
+  studentId: string;
+  mime: string;
+  bytes: number;
+}): Promise<NoteImageRow> {
+  const id = crypto.randomUUID();
+  await db()
+    .prepare('INSERT INTO note_images (id, student_id, mime, bytes) VALUES (?, ?, ?, ?)')
+    .bind(id, input.studentId, input.mime, input.bytes)
+    .run();
+  const row = await getNoteImage(id);
+  if (!row) throw new Error('Note image insert failed');
+  return row;
+}
+
+export async function getNoteImage(id: string): Promise<NoteImageRow | null> {
+  return db()
+    .prepare('SELECT id, student_id, mime, bytes, created_at FROM note_images WHERE id = ?')
+    .bind(id)
+    .first<NoteImageRow>();
 }

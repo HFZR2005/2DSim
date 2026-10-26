@@ -107,9 +107,10 @@ export function EvidenceCard({ kind, item, dateText, onNoteSaved, onDeleted }: P
             <NotePad
               value={draft}
               onInput={setDraft}
+              studentId={item.student_id}
               autoFocus={!item.note}
               initialMode={item.note ? 'preview' : 'write'}
-              placeholder="What clicked, what stalled, what to try next."
+              placeholder="What clicked, what stalled, what to try next. Paste a screenshot if it helps."
             />
           </div>
           {onDeleted && (

@@ -13,6 +13,7 @@ export async function GET(context: { locals: App.Locals; request: Request }) {
       viewer,
       email: user?.email ?? null,
       displayName: user?.display_name ?? null,
+      picture: user?.picture ?? null,
     });
   });
 }

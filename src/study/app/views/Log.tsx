@@ -318,10 +318,11 @@ export function Log({ studentId, studentName, sessions, tests, onSaved }: Props)
 
         <fieldset class="note-field">
           <legend>Reflection</legend>
-          <p class="muted">What clicked, what stalled, what to try next. Markdown is fine.</p>
+          <p class="muted">Paste a screenshot or drop a photo. Markdown is fine.</p>
           <NotePad
             value={note}
             onInput={setNote}
+            studentId={studentId}
             placeholder="The last two questions were the same idea in disguise. Next time, start by naming the method."
           />
         </fieldset>

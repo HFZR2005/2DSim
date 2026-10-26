@@ -16,6 +16,7 @@ import {
   type ViewerInfo,
 } from '../api';
 import { ActionButton, useActionStatus } from '../ActionButton';
+import { Avatar } from '../Avatar';
 
 type Props = {
   viewer: ViewerInfo;
@@ -71,6 +72,7 @@ export function People({ viewer, displayName, onChanged }: Props) {
           A student invited this Google email. You can see their progress. You cannot log work or invite
           others.
         </p>
+        <ClaudePanel />
       </section>
     );
   }
@@ -312,7 +314,30 @@ export function People({ viewer, displayName, onChanged }: Props) {
         )}
         {canLearn && canSupervise && <p class="muted">This Google account is both a student and a supervisor.</p>}
       </article>
+
+      <ClaudePanel />
     </section>
+  );
+}
+
+function ClaudePanel() {
+  const mcpUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/mcp`;
+  return (
+    <article class="people-panel">
+      <h2>Claude</h2>
+      <p class="muted">
+        Paste this as a custom connector in Claude on the web or in Desktop. You'll sign in with the same
+        Google account. Claude can read and log your own study record, not other students.
+      </p>
+      <label>
+        Connector URL
+        <input
+          readonly
+          value={mcpUrl}
+          onFocus={(event) => event.currentTarget.select()}
+        />
+      </label>
+    </article>
   );
 }
 
@@ -375,7 +400,10 @@ function RosterCard({
         ) : (
           roster.members.map((member) => (
             <li key={member.id}>
-              <span>{member.display_name}</span>
+              <span class="people-member">
+                <Avatar name={member.display_name} src={member.picture} size="sm" />
+                {member.display_name}
+              </span>
               <button
                 type="button"
                 class="text-btn danger"

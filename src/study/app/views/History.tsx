@@ -1,5 +1,7 @@
+import { useState } from 'preact/hooks';
 import type { SessionRecord, TestRecord } from '../api';
 import {
+  dayKey,
   dayOccupied,
   daySignals,
   formatDayTitle,
@@ -25,6 +27,7 @@ const WEEK_COUNT = 53;
 const DOW_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
 export function History({ sessions, tests, onNoteSaved, onDeleted }: Props) {
+  const [focusDay, setFocusDay] = useState<string | null>(null);
   const entries: Entry[] = [
     ...sessions.map((item) => ({ kind: 'practice' as const, at: item.created_at, item })),
     ...tests.map((item) => ({ kind: 'test' as const, at: item.created_at, item })),
@@ -33,6 +36,9 @@ export function History({ sessions, tests, onNoteSaved, onDeleted }: Props) {
   const months = heatmapMonthLabels(weeks);
   const byDay = daySignals(entries.map((entry) => entry.item));
   const occupied = dayOccupied(entries.map((entry) => entry.item));
+  const shown = focusDay
+    ? entries.filter((entry) => dayKey(entry.item.created_at) === focusDay)
+    : entries;
 
   function cellColor(day: string): string {
     const signal = byDay.get(day);
@@ -60,22 +66,33 @@ export function History({ sessions, tests, onNoteSaved, onDeleted }: Props) {
           {weeks.map((week) => (
             <div key={week[0]} class="heatmap-week">
               {week.map((day) => (
-                <span
+                <button
+                  type="button"
                   key={day}
-                  class="heatmap-cell"
+                  class={focusDay === day ? 'heatmap-cell is-active' : 'heatmap-cell'}
                   title={formatDayTitle(day)}
+                  aria-pressed={focusDay === day}
                   style={{ background: cellColor(day) }}
+                  onClick={() => setFocusDay((current) => (current === day ? null : day))}
                 />
               ))}
             </div>
           ))}
         </div>
       </div>
-      {entries.length === 0 ? (
-        <p class="empty">No logs match this filter.</p>
+      {focusDay && (
+        <div class="page-head">
+          <h2>{formatDayTitle(focusDay)}</h2>
+          <button type="button" class="text-btn" onClick={() => setFocusDay(null)}>
+            Show all
+          </button>
+        </div>
+      )}
+      {shown.length === 0 ? (
+        <p class="empty">{focusDay ? 'Nothing logged on that day.' : 'No logs match this filter.'}</p>
       ) : (
         <ol class="history-list">
-          {entries.map((entry) => (
+          {shown.map((entry) => (
             <li key={`${entry.kind}-${entry.item.id}`}>
               <EvidenceCard
                 kind={entry.kind}

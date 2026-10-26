@@ -1,0 +1,50 @@
+---
+import '../../../study/app/styles.css';
+import { attachViewer } from '../../../study/auth/session';
+import { authorizePageFrom, readAuthorizeRequest } from '../../../study/mcp/oauth';
+
+export const prerender = false;
+
+await attachViewer(Astro);
+const parsed = await readAuthorizeRequest(Astro.url.origin, Astro.url.searchParams);
+if (parsed instanceof Response) return parsed;
+
+if (!Astro.locals.viewer?.userId) {
+  return Astro.redirect(`/api/study/auth/google?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`);
+}
+
+const page = authorizePageFrom(parsed.client, parsed.params);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>Study Tracker — Connect Claude</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="study-login-body">
+    <main class="study-login">
+      <h1>Connect Claude</h1>
+      <p>
+        {page.clientName} at <strong>{page.redirectHost}</strong> wants to use your own Study Tracker record. It
+        can read progress and log sessions, reviews, and applications for you. It cannot see other students or
+        change people, rosters, or calendar settings.
+      </p>
+      <p class="muted">You're signed in with Google.</p>
+      <form method="post" action="/mcp/oauth/consent">
+        {Object.entries(page.hidden).map(([name, value]) => (
+          <input type="hidden" name={name} value={value} />
+        ))}
+        <button class="primary" name="decision" value="allow">Allow</button>
+        <button class="text-btn" name="decision" value="deny">Don't allow</button>
+      </form>
+    </main>
+  </body>
+</html>

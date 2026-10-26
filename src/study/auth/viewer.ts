@@ -1,6 +1,6 @@
 export type StaffViewer = {
   role: 'staff';
-  userId?: string;
+  userId: string;
 };
 
 export type SupervisorViewer = {
@@ -43,10 +43,6 @@ export function canWriteStudent(viewer: Viewer, studentId: string): boolean {
   if (viewer.role === 'student') return viewer.studentId === studentId;
   if (viewer.role === 'supervisor') return viewer.writableIds.includes(studentId);
   return false;
-}
-
-export function canManageStudents(viewer: Viewer): boolean {
-  return viewer.role === 'staff';
 }
 
 export function canManageRosters(viewer: Viewer): boolean {

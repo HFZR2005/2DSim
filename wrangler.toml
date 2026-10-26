@@ -1,6 +1,6 @@
 # Workers deploy (not classic Pages): npm run deploy
 # D1: npm run db:migrate:remote
-# Secrets: STUDY_PIN (bootstrap), AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# Secrets: AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 # Local: copy .dev.vars.example to .dev.vars
 
 name = "mechanicslab"
@@ -11,6 +11,7 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 [assets]
 directory = "./dist/client"
 binding = "ASSETS"
+run_worker_first = ["/.well-known/*"]
 
 [[routes]]
 pattern = "mechanicslab.org"
@@ -25,3 +26,7 @@ binding = "DB"
 database_name = "study-tracker"
 database_id = "c904898e-badc-4bb0-a4ef-021ecf4ece11"
 migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "NOTES"
+bucket_name = "study-notes"

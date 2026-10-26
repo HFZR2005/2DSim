@@ -1,12 +1,9 @@
 import { z } from 'zod';
+import { EVENT_TYPES, STAGES } from './mcp/applications';
 import { CONFIDENCE } from './signal';
 import { TYPE_MAX } from './taskType';
 
 export const NOTE_MAX = 8000;
-
-export const createStudentSchema = z.object({
-  displayName: z.string().trim().min(1).max(80),
-});
 
 export const createSessionSchema = z.object({
   subject: z.string().trim().min(1).max(80),
@@ -25,10 +22,6 @@ export const createTestSchema = z.object({
   score: z.string().trim().min(1).max(40),
   confidence: z.enum(CONFIDENCE).optional(),
   note: z.string().trim().max(NOTE_MAX).optional(),
-});
-
-export const loginSchema = z.object({
-  pin: z.string().min(1).max(80),
 });
 
 export const updateNoteSchema = z.object({
@@ -65,18 +58,28 @@ export const createShareSchema = z.object({
   email: z.email().max(160),
 });
 
-export const grantAccessSchema = z
+const nextEventSchema = z
   .object({
-    email: z.email().max(160),
-    kind: z.enum(['staff', 'adult', 'self']),
-    studentId: z.string().trim().min(1).optional(),
+    type: z.enum(EVENT_TYPES),
+    at: z.string().trim().min(1).max(40),
+    ends_at: z.string().trim().max(40).optional(),
+    label: z.string().trim().max(160).optional(),
   })
-  .superRefine((value, ctx) => {
-    if (value.kind !== 'staff' && !value.studentId) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Choose a student',
-        path: ['studentId'],
-      });
-    }
-  });
+  .nullable();
+
+export const createApplicationSchema = z.object({
+  company: z.string().trim().min(1).max(120),
+  role: z.string().trim().min(1).max(160),
+  stage: z.enum(STAGES).optional(),
+  next_event: nextEventSchema.optional(),
+  url: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(4000).optional(),
+});
+
+export const updateApplicationSchema = z.object({
+  stage: z.enum(STAGES).optional(),
+  next_event: nextEventSchema.optional(),
+  url: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().max(4000).optional(),
+  append_note: z.string().trim().min(1).max(400).optional(),
+});

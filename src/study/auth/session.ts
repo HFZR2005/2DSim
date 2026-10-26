@@ -1,7 +1,5 @@
-import type { APIContext } from 'astro';
 import {
   getUser,
-  hasStaffAccess,
   learnerStudentId,
   listAccessForEmail,
   listAccessForUser,
@@ -10,12 +8,11 @@ import {
   rosterStudentIdsForOwner,
   type AccessRow,
 } from '../db';
-import { getAuthSecret, getStudyPin } from '../env';
-import { parseCookie, STUDY_COOKIE, tokenIsStaff, userIdFromToken } from './cookie';
+import { getAuthSecret } from '../env';
+import { parseCookie, STUDY_COOKIE, userIdFromToken } from './cookie';
 import {
   canAccessStudent,
   canManageRosters,
-  canManageStudents,
   canWriteStudent,
   visibleStudentIds,
   type Viewer,
@@ -84,17 +81,6 @@ export function requireViewer(locals: App.Locals): Viewer {
   return locals.viewer;
 }
 
-export function requireStaff(locals: App.Locals): Viewer {
-  const viewer = requireViewer(locals);
-  if (!canManageStudents(viewer)) {
-    throw new Response(JSON.stringify({ error: 'Staff only' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  return viewer;
-}
-
 export function requireUser(locals: App.Locals): Viewer & { userId: string } {
   const viewer = requireViewer(locals);
   if (!viewer.userId) {
@@ -147,7 +133,7 @@ export function requireStudentSelf(locals: App.Locals, studentId: string): Viewe
 
 export { canManageRosters, canWriteStudent, visibleStudentIds };
 
-export async function attachViewer(context: APIContext): Promise<Viewer | null> {
+export async function attachViewer(context: { request: Request; locals: App.Locals }): Promise<Viewer | null> {
   const token = parseCookie(context.request.headers.get('cookie'), STUDY_COOKIE);
   try {
     const secret = getAuthSecret();
@@ -164,22 +150,17 @@ export async function attachViewer(context: APIContext): Promise<Viewer | null> 
       return context.locals.viewer;
     }
   } catch {
-    // AUTH_SECRET missing — fall through
-  }
-
-  try {
-    if (!(await hasStaffAccess())) {
-      const pin = getStudyPin();
-      if (await tokenIsStaff(pin, token)) {
-        context.locals.viewer = { role: 'staff' };
-        return context.locals.viewer;
-      }
-    }
-  } catch {
-    context.locals.viewer = null;
-    return null;
+    // AUTH_SECRET missing
   }
 
   context.locals.viewer = null;
   return null;
+}
+
+export async function viewerForUserId(userId: string): Promise<Viewer | null> {
+  const user = await getUser(userId);
+  if (!user) return null;
+  const access = [...(await listAccessForUser(user.id)), ...(await listAccessForEmail(user.email))];
+  const unique = new Map(access.map((row) => [row.id, row]));
+  return resolveViewer(user.id, user.email, [...unique.values()]);
 }

@@ -1,4 +1,5 @@
 import { getGoogleOAuth } from '../env';
+import { normalizePictureUrl } from '../picture';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -24,7 +25,7 @@ export function googleAuthorizeUrl(origin: string, state: string): string | null
 export async function googleProfile(
   origin: string,
   code: string,
-): Promise<{ email: string; name: string; sub: string }> {
+): Promise<{ email: string; name: string; sub: string; picture: string | null }> {
   const google = getGoogleOAuth();
   if (!google) {
     throw new Error('Google OAuth is not configured');
@@ -54,6 +55,7 @@ export async function googleProfile(
     email?: string;
     email_verified?: boolean;
     name?: string;
+    picture?: string;
     sub?: string;
   };
   if (!profileResponse.ok || !profile.email || !profile.sub) {
@@ -66,6 +68,7 @@ export async function googleProfile(
     email: profile.email,
     name: profile.name?.trim() || profile.email,
     sub: profile.sub,
+    picture: normalizePictureUrl(profile.picture),
   };
 }
 

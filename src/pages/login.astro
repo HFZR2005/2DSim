@@ -1,5 +1,4 @@
 ---
-import { hasStaffAccess } from '../study/db';
 import { getGoogleOAuth } from '../study/env';
 import '../study/app/styles.css';
 
@@ -9,13 +8,11 @@ const requested = Astro.url.searchParams.get('next') ?? '/';
 const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/';
 const error = Astro.url.searchParams.get('error');
 
-let pinEnabled = true;
 let googleEnabled = false;
 try {
-  pinEnabled = !(await hasStaffAccess());
   googleEnabled = Boolean(getGoogleOAuth());
 } catch {
-  pinEnabled = true;
+  googleEnabled = false;
 }
 ---
 
@@ -39,9 +36,7 @@ try {
         {
           googleEnabled
             ? 'Sign in with Google. Students and supervisors set up their own accounts.'
-            : pinEnabled
-              ? 'Enter the shared PIN to continue.'
-              : 'Google sign-in is not configured yet.'
+            : 'Google sign-in is not configured yet.'
         }
       </p>
       {
@@ -51,73 +46,7 @@ try {
           </a>
         )
       }
-      {
-        pinEnabled && (
-          <form id="study-login-form" method="post">
-            <label for="pin">PIN</label>
-            <input id="pin" name="pin" type="password" autocomplete="current-password" required />
-            <button type="submit" class="action-btn">Continue</button>
-          </form>
-        )
-      }
       <p id="study-login-error" class="study-error" hidden={!error}>{error}</p>
-      <p><a href="/lab">Mechanics lab</a> is public and does not need a sign-in.</p>
     </main>
-    {
-      pinEnabled && (
-        <script define:vars={{ next }}>
-          const form = document.getElementById('study-login-form');
-          const button = form?.querySelector('button[type="submit"]');
-          const errorEl = document.getElementById('study-login-error');
-          let resetTimer = 0;
-
-          function setButton(status) {
-            if (!button) return;
-            window.clearTimeout(resetTimer);
-            button.classList.remove('is-loading', 'is-ok', 'is-error');
-            if (status === 'loading') {
-              button.disabled = true;
-              button.classList.add('is-loading');
-              button.textContent = 'Signing in';
-            } else if (status === 'ok') {
-              button.disabled = true;
-              button.classList.add('is-ok');
-              button.textContent = 'Signed in';
-            } else if (status === 'error') {
-              button.disabled = true;
-              button.classList.add('is-error');
-              button.textContent = "Couldn't sign in";
-              resetTimer = window.setTimeout(() => setButton('idle'), 1600);
-            } else {
-              button.disabled = false;
-              button.textContent = 'Continue';
-            }
-          }
-
-          form?.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (errorEl) errorEl.hidden = true;
-            setButton('loading');
-            const pin = new FormData(form).get('pin');
-            try {
-              const response = await fetch('/api/study/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin }),
-              });
-              if (!response.ok) {
-                setButton('error');
-                return;
-              }
-              setButton('ok');
-              await new Promise((resolve) => window.setTimeout(resolve, 400));
-              window.location.assign(next);
-            } catch {
-              setButton('error');
-            }
-          });
-        </script>
-      )
-    }
   </body>
 </html>

@@ -1,6 +1,25 @@
 import { marked } from 'marked';
+import { expandNoteImageTokens, imageSrcFor, parseNoteImageRef } from '../../noteImage';
 
-const ALLOWED = new Set(['P', 'BR', 'STRONG', 'EM', 'B', 'I', 'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'CODE', 'PRE', 'BLOCKQUOTE', 'A']);
+const ALLOWED = new Set([
+  'P',
+  'BR',
+  'STRONG',
+  'EM',
+  'B',
+  'I',
+  'UL',
+  'OL',
+  'LI',
+  'H1',
+  'H2',
+  'H3',
+  'CODE',
+  'PRE',
+  'BLOCKQUOTE',
+  'A',
+  'IMG',
+]);
 
 marked.setOptions({ gfm: true, breaks: true });
 
@@ -22,6 +41,18 @@ function sanitize(html: string): string {
           child.setAttribute('rel', 'noopener noreferrer');
           child.setAttribute('target', '_blank');
         }
+      } else if (child.tagName === 'IMG') {
+        const src = child.getAttribute('src') ?? '';
+        const alt = child.getAttribute('alt') ?? '';
+        [...child.attributes].forEach((attr) => child.removeAttribute(attr.name));
+        const id = parseNoteImageRef(src);
+        if (id) {
+          child.setAttribute('src', imageSrcFor(id));
+          child.setAttribute('alt', alt);
+        } else {
+          child.remove();
+          continue;
+        }
       } else {
         [...child.attributes].forEach((attr) => child.removeAttribute(attr.name));
       }
@@ -34,12 +65,13 @@ function sanitize(html: string): string {
 }
 
 export function renderNote(markdown: string): string {
-  const raw = marked.parse(markdown, { async: false }) as string;
+  const raw = marked.parse(expandNoteImageTokens(markdown), { async: false }) as string;
   return sanitize(raw);
 }
 
 export function notePreview(markdown: string, max = 90): string {
   const plain = markdown
+    .replace(/!\[[^\]]*]\([^)]+\)/g, 'Image')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/[`*_#>[\]]/g, '')
     .replace(/^\s*[-*]\s+/gm, '')

@@ -19,10 +19,25 @@ interface D1Database {
   prepare(query: string): D1PreparedStatement;
 }
 
+interface R2ObjectBody {
+  body: ReadableStream;
+  httpMetadata?: { contentType?: string };
+}
+
+interface R2Bucket {
+  put(
+    key: string,
+    value: ArrayBuffer | Uint8Array,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<unknown>;
+  get(key: string): Promise<R2ObjectBody | null>;
+  delete(key: string): Promise<void>;
+}
+
 declare module 'cloudflare:workers' {
   export const env: {
     DB: D1Database;
-    STUDY_PIN: string;
+    NOTES: R2Bucket;
     AUTH_SECRET?: string;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
